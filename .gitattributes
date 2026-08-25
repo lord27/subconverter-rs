@@ -1,0 +1,2 @@
+# Golden test files are byte-compared against emitter output; never eol-convert them.
+*.golden -text
