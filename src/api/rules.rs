@@ -306,9 +306,13 @@ async fn process_matching_files(
     config: &GitHubConfig,
 ) -> Vec<(String, bool)> {
     let mut results = Vec::new();
-    let vfs = crate::utils::file_wasm::get_vfs()
-        .await
-        .expect("Failed to get VFS");
+    let vfs = match crate::utils::file_wasm::get_vfs().await {
+        Ok(vfs) => vfs,
+        Err(e) => {
+            log::error!("Failed to get VFS: {}", e);
+            return patterns.iter().map(|p| (p.clone(), false)).collect();
+        }
+    };
 
     // Create base destination directory
     if let Err(e) = vfs.create_directory(dest_path).await {
