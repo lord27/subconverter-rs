@@ -293,8 +293,8 @@ pub fn convert_proxy_groups(
 /// # Example
 ///
 /// ```rust
-/// use crate::generator::yaml::proxy_group_output::{ClashProxyGroup, convert_proxy_groups};
-/// use crate::models::{ProxyGroupConfig, ProxyGroupType};
+/// use libsubconverter::generator::yaml::proxy_group_output::{ClashProxyGroup, convert_proxy_groups};
+/// use libsubconverter::models::{ProxyGroupConfig, ProxyGroupType};
 /// use std::collections::HashMap;
 ///
 /// // Create some proxy groups

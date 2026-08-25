@@ -11,7 +11,7 @@
 ///
 /// # Examples
 /// ```
-/// use subconverter_rs::utils::url::url_encode;
+/// use libsubconverter::utils::url::url_encode;
 ///
 /// let encoded = url_encode("Hello World!");
 /// assert_eq!(encoded, "Hello%20World%21");
@@ -31,7 +31,7 @@ pub fn url_encode(input: &str) -> String {
 ///
 /// # Examples
 /// ```
-/// use subconverter_rs::utils::url::url_decode;
+/// use libsubconverter::utils::url::url_decode;
 ///
 /// let decoded = url_decode("Hello%20World%21");
 /// assert_eq!(decoded, "Hello World!");
@@ -53,7 +53,7 @@ pub fn url_decode(input: &str) -> String {
 ///
 /// # Examples
 /// ```
-/// use subconverter_rs::utils::url::get_url_arg;
+/// use libsubconverter::utils::url::get_url_arg;
 ///
 /// let query = "host=example.com&port=443&mode=ws";
 /// assert_eq!(get_url_arg(query, "host"), "example.com");

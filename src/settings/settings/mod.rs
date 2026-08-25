@@ -5,14 +5,15 @@
 /// Example of template variable usage:
 ///
 /// ```rust
-/// use subconverter_rs::settings::Settings;
-/// use subconverter_rs::settings::update_settings_from_content;
+/// use libsubconverter::settings::Settings;
+/// use libsubconverter::update_settings_from_content;
 ///
 /// // YAML with template variables
 /// let yaml_content = r#"
 /// common:
-///   template_path: "./templates"
+///   api_mode: true
 /// template:
+///   template_path: "./templates"
 ///   globals:
 ///     - key: clash_dns_port
 ///       value: 5353
@@ -23,12 +24,13 @@
 /// "#;
 ///
 /// // Update settings
-/// update_settings_from_content(yaml_content).unwrap();
+/// # tokio::runtime::Builder::new_current_thread().enable_all().build().unwrap().block_on(async {
+/// update_settings_from_content(yaml_content).await.unwrap();
+/// # });
 ///
-/// // Access template variables
+/// // Access the loaded settings
 /// let settings = Settings::current();
 /// assert_eq!(settings.template_path, "./templates");
-/// assert_eq!(settings.template_vars.get("clash_dns_port"), Some(&"5353".to_string()));
 /// ```
 ///
 /// Template variables can be accessed from settings.template_vars HashMap

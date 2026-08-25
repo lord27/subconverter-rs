@@ -8,7 +8,7 @@
 //! Import the models directly from this module:
 //!
 //! ```rust
-//! use subconverter_rs::models::{Proxy, ProxyType};
+//! use libsubconverter::models::{Proxy, ProxyType};
 //!
 //! // Create a new proxy
 //! let mut proxy = Proxy::default();
@@ -20,7 +20,7 @@
 //! Or use the re-exports from the crate root:
 //!
 //! ```rust
-//! use subconverter_rs::{Proxy, ProxyType};
+//! use libsubconverter::{Proxy, ProxyType};
 //!
 //! // Create a new proxy
 //! let mut proxy = Proxy::default();
@@ -33,7 +33,7 @@
 //! special handling:
 //!
 //! ```rust
-//! use subconverter_rs::Proxy;
+//! use libsubconverter::Proxy;
 //!
 //! let proxy = Proxy::default();
 //!
