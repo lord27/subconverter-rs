@@ -1,6 +1,6 @@
 //! Network utilities for IP address handling and validation
 
-use std::net::{IpAddr, ToSocketAddrs};
+use std::net::ToSocketAddrs;
 
 /// Resolves a hostname to its IP address
 ///
@@ -16,16 +16,8 @@ pub fn hostname_to_ip_addr(host: &str) -> Option<String> {
     let sock_addr = format!("{}:0", host).to_socket_addrs();
 
     match sock_addr {
-        Ok(mut addrs) => {
-            // Find the first IPv4 or IPv6 address
-            while let Some(addr) = addrs.next() {
-                match addr.ip() {
-                    IpAddr::V4(ipv4) => return Some(ipv4.to_string()),
-                    IpAddr::V6(ipv6) => return Some(ipv6.to_string()),
-                }
-            }
-            None
-        }
+        // Return the first resolved address, whether IPv4 or IPv6
+        Ok(mut addrs) => addrs.next().map(|addr| addr.ip().to_string()),
         Err(_) => None,
     }
 }

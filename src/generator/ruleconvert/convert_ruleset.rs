@@ -133,10 +133,13 @@ pub fn convert_ruleset(content: &str, ruleset_type: RulesetType) -> String {
             .to_string();
 
         // Remove group info and standardize format
-        // This regex matches the rule type and pattern, removes any group, and preserves no-resolve if present
+        // This regex matches the rule type and pattern, removes any group, and preserves no-resolve if present.
+        // The group is a lazy optional `(?:,.*?)??` so that a trailing `,no-resolve` is claimed by the last
+        // capture instead of being swallowed as the group (the `regex` crate has no lookahead).
         let rule_format_regex = Regex::new(
-            r"^((?i:DOMAIN(?:-(?:SUFFIX|KEYWORD))?|IP-CIDR6?|USER-AGENT),)\s*?(\S*?)(?:,(?!no-resolve).*?)(,no-resolve)?$"
-        ).unwrap();
+            r"^((?i:DOMAIN(?:-(?:SUFFIX|KEYWORD))?|IP-CIDR6?|USER-AGENT),)\s*?(\S*?)(?:,.*?)??(,no-resolve)?$",
+        )
+        .unwrap();
 
         output = rule_format_regex
             .replace_all(&processed, "$1$2$3")
@@ -165,4 +168,46 @@ pub fn convert_ruleset(content: &str, ruleset_type: RulesetType) -> String {
     }
 
     output
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The Quantumult X group-stripping regex must work without lookahead (unsupported by
+    /// the `regex` crate), so pin its behaviour on single `type,pattern[,group][,no-resolve]` rules.
+    #[test]
+    fn test_quanx_rule_group_stripping() {
+        let cases = [
+            ("DOMAIN,example.com,Proxy", "DOMAIN,example.com"),
+            (
+                "DOMAIN-SUFFIX,example.com,Proxy",
+                "DOMAIN-SUFFIX,example.com",
+            ),
+            ("DOMAIN-KEYWORD,google,Proxy", "DOMAIN-KEYWORD,google"),
+            ("USER-AGENT,Foo*,Proxy", "USER-AGENT,Foo*"),
+            (
+                "IP-CIDR,1.2.3.4/32,Proxy,no-resolve",
+                "IP-CIDR,1.2.3.4/32,no-resolve",
+            ),
+            (
+                "IP-CIDR6,::1/128,Proxy,no-resolve",
+                "IP-CIDR6,::1/128,no-resolve",
+            ),
+            (
+                "IP-CIDR,1.2.3.4/32,no-resolve",
+                "IP-CIDR,1.2.3.4/32,no-resolve",
+            ),
+            ("IP-CIDR,1.2.3.4/32", "IP-CIDR,1.2.3.4/32"),
+            ("DOMAIN, example.com, Proxy", "DOMAIN,example.com"),
+            ("host,example.com,Proxy", "DOMAIN,example.com"),
+        ];
+        for (input, expected) in cases {
+            assert_eq!(
+                convert_ruleset(input, RulesetType::Quanx),
+                expected,
+                "input: {input}"
+            );
+        }
+    }
 }
