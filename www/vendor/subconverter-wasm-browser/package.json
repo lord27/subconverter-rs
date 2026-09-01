@@ -6,5 +6,12 @@
   "license": "GPL-3.0+",
   "main": "libsubconverter.js",
   "types": "libsubconverter.d.ts",
+  "files": [
+    "libsubconverter.js",
+    "libsubconverter.d.ts",
+    "libsubconverter_bg.wasm",
+    "libsubconverter_bg.wasm.d.ts",
+    "snippets/"
+  ],
   "sideEffects": false
 }

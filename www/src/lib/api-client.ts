@@ -10,7 +10,7 @@ import * as wasmClient from './wasm-client';
  *     `false`): pages fetch `/api/*`, proxied by Nginx to a Node backend whose
  *     storage is SQLite — data is shared and persistent across all users.
  */
-const IS_STATIC_EXPORT =
+export const IS_STATIC_EXPORT =
     typeof process !== 'undefined' &&
     process.env.NEXT_PUBLIC_STATIC_EXPORT === 'true';
 
@@ -394,6 +394,14 @@ export interface ShortUrlData {
     id: string;
     target_url: string;
     short_url: string;
+    /**
+     * Structured conversion query parameters (e.g. {target:'clash', url:'https://...'}).
+     * When present, the link is "permanent": it resolves against the currently
+     * enabled conversion endpoint at redirect time.
+     */
+    params?: Record<string, unknown>;
+    /** Optional endpoint override. When absent, the globally enabled endpoint is used. */
+    endpoint_id?: string;
     created_at: number;
     last_used?: number;
     use_count: number;
@@ -406,8 +414,84 @@ export interface ShortUrlData {
  */
 export interface CreateShortUrlRequest {
     target_url: string;
+    params?: Record<string, unknown>;
+    endpoint_id?: string;
     custom_id?: string;
     description?: string;
+}
+
+/**
+ * A configurable conversion endpoint that short links redirect to.
+ */
+export interface ConversionEndpoint {
+    id: string;
+    name: string;
+    /** Base URL of the conversion service. Empty means "current site". */
+    base_url: string;
+    /** API path on the endpoint service. Defaults to `/api/sub`. */
+    path?: string;
+}
+
+/**
+ * Server configuration listing all conversion endpoints and the active default.
+ */
+export interface EndpointsConfig {
+    endpoints: ConversionEndpoint[];
+    /** ID of the currently enabled endpoint. Short links without an explicit
+     *  endpoint_id redirect to this one. */
+    default_endpoint: string;
+}
+
+/** VFS path where the endpoint configuration is persisted (shared SQLite / localStorage). */
+export const ENDPOINTS_CONFIG_FILE = 'config/endpoints.json';
+
+const DEFAULT_ENDPOINT_PATH = '/api/sub';
+
+/**
+ * Load the conversion endpoint configuration. Returns a default (empty) config
+ * when the file has not been created yet.
+ */
+export async function getEndpointsConfig(): Promise<EndpointsConfig> {
+    let content: string;
+    try {
+        content = await readFile(ENDPOINTS_CONFIG_FILE);
+    } catch {
+        return { endpoints: [], default_endpoint: '' };
+    }
+
+    try {
+        const parsed = JSON.parse(content || '{}') as Partial<EndpointsConfig>;
+        const endpoints = Array.isArray(parsed.endpoints)
+            ? parsed.endpoints.map((e) => ({
+                  id: e.id || '',
+                  name: e.name || e.id || '',
+                  base_url: e.base_url || '',
+                  path: e.path || DEFAULT_ENDPOINT_PATH,
+              }))
+            : [];
+        return {
+            endpoints,
+            default_endpoint: typeof parsed.default_endpoint === 'string' ? parsed.default_endpoint : '',
+        };
+    } catch {
+        return { endpoints: [], default_endpoint: '' };
+    }
+}
+
+/**
+ * Persist the conversion endpoint configuration to the server (KV store).
+ */
+export async function saveEndpointsConfig(config: EndpointsConfig): Promise<void> {
+    const normalized: EndpointsConfig = {
+        endpoints: config.endpoints.map((e) => ({
+            id: e.id,
+            name: e.name,
+            base_url: e.base_url || '',
+            path: e.path || DEFAULT_ENDPOINT_PATH,
+        })),
+        default_endpoint: config.default_endpoint,
+    };
+    await writeFile(ENDPOINTS_CONFIG_FILE, JSON.stringify(normalized, null, 2));
 }
 
 /**
@@ -498,7 +582,7 @@ export async function deleteShortUrl(id: string): Promise<void> {
 /**
  * Update a short URL
  */
-export async function updateShortUrl(id: string, updates: { target_url?: string; description?: string | null; custom_id?: string }): Promise<ShortUrlData> {
+export async function updateShortUrl(id: string, updates: { target_url?: string; params?: Record<string, unknown> | null; endpoint_id?: string | null; description?: string | null; custom_id?: string }): Promise<ShortUrlData> {
     if (IS_STATIC_EXPORT) {
         return wasmClient.wasmUpdateShortUrl(id, updates);
     }

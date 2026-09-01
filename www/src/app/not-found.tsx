@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { loadWasmModule } from '@/lib/wasm-client';
+import { IS_STATIC_EXPORT } from '@/lib/api-client';
 
 /**
  * Extract the short link ID from `/api/s/<id>` or `/s/<id>`.
@@ -22,6 +23,26 @@ function extractShortId(pathname: string): string | null {
     }
 }
 
+/**
+ * Pure static export has no `/api/*` routes. Rewrite any target that points at
+ * the current site's `/api/...` to the static `/convert` page, which runs the
+ * conversion in-browser (WASM) and shows / lets you download the result.
+ * Targets on other origins (remote endpoints) are left untouched.
+ */
+function rewriteForStaticExport(url: string): string {
+    let target: URL;
+    try {
+        target = new URL(url, window.location.href);
+    } catch {
+        return url;
+    }
+    if (target.origin !== window.location.origin) return url;
+    if (!target.pathname.startsWith('/api/')) return url;
+    // Keep the trailing slash form used by the static export build.
+    target.pathname = '/convert/';
+    return target.href;
+}
+
 type Status = 'checking' | 'redirecting' | 'invalid';
 
 export default function NotFound() {
@@ -37,10 +58,20 @@ export default function NotFound() {
             return;
         }
 
+        // Non-browser-data mode (server-backed build): let the server decide.
+        // /api/s/<id> 302s to the resolved endpoint (Nginx proxy in static-API
+        // mode, or the real Route Handler in the full build).
+        if (!IS_STATIC_EXPORT) {
+            window.location.replace('/api/s/' + encodeURIComponent(shortId));
+            return;
+        }
+
         (async () => {
             try {
                 const wasm = await loadWasmModule();
-                const response = await wasm.short_url_resolve(shortId);
+                // Pass the current origin so links with an empty endpoint base_url
+                // resolve to this site.
+                const response = await wasm.short_url_resolve(shortId, window.location.href);
                 if (cancelled) return;
 
                 const data = typeof response === 'string' ? JSON.parse(response) : response;
@@ -48,7 +79,7 @@ export default function NotFound() {
                     setStatus('redirecting');
                     // Brief pause so the "Redirecting..." message is visible.
                     window.setTimeout(() => {
-                        window.location.replace(data.target_url);
+                        window.location.replace(rewriteForStaticExport(data.target_url));
                     }, 300);
                 } else {
                     setStatus('invalid');

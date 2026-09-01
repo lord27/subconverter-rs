@@ -26,8 +26,11 @@ export async function GET(
         // Load the WASM module
         const wasmModule = await loadWasmSingleton('ShortURL');
 
-        // Call the WASM function to resolve the short URL
-        const response = await wasmModule.short_url_resolve(id);
+        // Call the WASM function to resolve the short URL.
+        // The request URL is passed so links built from structured params can be
+        // resolved against the currently enabled conversion endpoint (empty
+        // base_url means "current site").
+        const response = await wasmModule.short_url_resolve(id, request.url);
 
         // Parse the response
         const data = JSON.parse(response);

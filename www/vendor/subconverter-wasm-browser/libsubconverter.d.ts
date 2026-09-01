@@ -161,7 +161,7 @@ export function short_url_list(): Promise<any>;
 
 export function short_url_move(id: string, new_id: string, request_url: string): Promise<any>;
 
-export function short_url_resolve(id: string): Promise<any>;
+export function short_url_resolve(id: string, request_url: string): Promise<any>;
 
 export function short_url_update(id: string, request_json: string): Promise<any>;
 
@@ -171,8 +171,25 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
-    readonly init_settings_wasm: (a: number, b: number) => any;
-    readonly sub_process_wasm: (a: number, b: number) => any;
+    readonly init_panic_hook: () => void;
+    readonly short_url_create: (a: number, b: number, c: number, d: number) => any;
+    readonly short_url_delete: (a: number, b: number) => any;
+    readonly short_url_list: () => any;
+    readonly short_url_move: (a: number, b: number, c: number, d: number, e: number, f: number) => any;
+    readonly short_url_resolve: (a: number, b: number, c: number, d: number) => any;
+    readonly short_url_update: (a: number, b: number, c: number, d: number) => any;
+    readonly admin_create_directory: (a: number, b: number) => any;
+    readonly admin_debug_test_panic: () => [number, number];
+    readonly admin_delete_file: (a: number, b: number) => any;
+    readonly admin_file_exists: (a: number, b: number) => any;
+    readonly admin_get_file_attributes: (a: number, b: number) => any;
+    readonly admin_init_kv_bindings_js: () => [number, number, number];
+    readonly admin_load_github_directory: (a: number, b: number, c: number) => any;
+    readonly admin_load_github_directory_flat: (a: number, b: number, c: number) => any;
+    readonly admin_read_file: (a: number, b: number) => any;
+    readonly admin_update_rules: (a: number, b: number) => any;
+    readonly admin_write_file: (a: number, b: number, c: number, d: number) => any;
+    readonly list_directory: (a: number, b: number) => any;
     readonly __wbg_directoryentry_free: (a: number, b: number) => void;
     readonly __wbg_fileattributes_free: (a: number, b: number) => void;
     readonly __wbg_get_directoryentry_attributes: (a: number) => number;
@@ -199,29 +216,13 @@ export interface InitOutput {
     readonly __wbg_set_fileattributes_source_type: (a: number, b: number, c: number) => void;
     readonly directoryentry_new: (a: number, b: number, c: number, d: number, e: number, f: number) => number;
     readonly fileattributes_new: () => number;
-    readonly short_url_create: (a: number, b: number, c: number, d: number) => any;
-    readonly short_url_delete: (a: number, b: number) => any;
-    readonly short_url_list: () => any;
-    readonly short_url_move: (a: number, b: number, c: number, d: number, e: number, f: number) => any;
-    readonly short_url_resolve: (a: number, b: number) => any;
-    readonly short_url_update: (a: number, b: number, c: number, d: number) => any;
-    readonly admin_create_directory: (a: number, b: number) => any;
-    readonly admin_debug_test_panic: () => [number, number];
-    readonly admin_delete_file: (a: number, b: number) => any;
-    readonly admin_file_exists: (a: number, b: number) => any;
-    readonly admin_get_file_attributes: (a: number, b: number) => any;
-    readonly admin_init_kv_bindings_js: () => [number, number, number];
-    readonly admin_load_github_directory: (a: number, b: number, c: number) => any;
-    readonly admin_load_github_directory_flat: (a: number, b: number, c: number) => any;
-    readonly admin_read_file: (a: number, b: number) => any;
-    readonly admin_update_rules: (a: number, b: number) => any;
-    readonly admin_write_file: (a: number, b: number, c: number, d: number) => any;
+    readonly init_settings_wasm: (a: number, b: number) => any;
+    readonly sub_process_wasm: (a: number, b: number) => any;
     readonly init_wasm_logging: (a: number, b: number) => [number, number];
     readonly initialize_subconverter_webapp: () => any;
-    readonly list_directory: (a: number, b: number) => any;
-    readonly init_panic_hook: () => void;
-    readonly wasm_bindgen_3f7a78b1d7bb0655___convert__closures_____invoke___wasm_bindgen_3f7a78b1d7bb0655___JsValue__core_f0fd674eaa06beef___result__Result_____wasm_bindgen_3f7a78b1d7bb0655___JsError___true_: (a: number, b: number, c: any) => [number, number];
-    readonly wasm_bindgen_3f7a78b1d7bb0655___convert__closures_____invoke___js_sys_e7aa2240194b23b2___Function_fn_wasm_bindgen_3f7a78b1d7bb0655___JsValue_____wasm_bindgen_3f7a78b1d7bb0655___sys__Undefined___js_sys_e7aa2240194b23b2___Function_fn_wasm_bindgen_3f7a78b1d7bb0655___JsValue_____wasm_bindgen_3f7a78b1d7bb0655___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
+    readonly wasm_bindgen_519bd8a174500762___convert__closures_____invoke___wasm_bindgen_519bd8a174500762___JsValue__core_f0fd674eaa06beef___result__Result_____wasm_bindgen_519bd8a174500762___JsError___true_: (a: number, b: number, c: any) => [number, number];
+    readonly wasm_bindgen_519bd8a174500762___convert__closures_____invoke___js_sys_32cd027fa0e330a9___Function_fn_wasm_bindgen_519bd8a174500762___JsValue_____wasm_bindgen_519bd8a174500762___sys__Undefined___js_sys_32cd027fa0e330a9___Function_fn_wasm_bindgen_519bd8a174500762___JsValue_____wasm_bindgen_519bd8a174500762___sys__Undefined_______true_: (a: number, b: number, c: any, d: any) => void;
+    readonly wasm_bindgen_519bd8a174500762___convert__closures_____invoke___bool__true_: (a: number, b: number) => number;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_exn_store: (a: number) => void;

@@ -10,6 +10,8 @@ use std::time::UNIX_EPOCH;
 use wasm_bindgen::prelude::*;
 
 const SHORT_URL_DIR: &str = "/short";
+const ENDPOINTS_CONFIG_PATH: &str = "/config/endpoints.json";
+const DEFAULT_ENDPOINT_PATH: &str = "/api/sub";
 const ALPHABET: [char; 62] = [
     '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i',
     'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B',
@@ -20,6 +22,11 @@ const ALPHABET: [char; 62] = [
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ShortUrlData {
     pub target_url: String,
+    /// Structured conversion query parameters (e.g. {"target":"clash","url":"https://..."}).
+    /// When present, the redirect target is built dynamically from the enabled endpoint.
+    pub params: Option<Value>,
+    /// Optional endpoint override. When absent, the globally enabled/default endpoint is used.
+    pub endpoint_id: Option<String>,
     pub created_at: u64,
     pub last_used: Option<u64>,
     pub use_count: u64,
@@ -30,6 +37,8 @@ pub struct ShortUrlData {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct CreateShortUrlRequest {
     pub target_url: String,
+    pub params: Option<Value>,
+    pub endpoint_id: Option<String>,
     pub custom_id: Option<String>,
     pub description: Option<String>,
 }
@@ -39,6 +48,8 @@ pub struct ShortUrlResponse {
     pub id: String,
     pub target_url: String,
     pub short_url: String,
+    pub params: Option<Value>,
+    pub endpoint_id: Option<String>,
     pub created_at: u64,
     pub last_used: Option<u64>,
     pub use_count: u64,
@@ -49,6 +60,35 @@ pub struct ShortUrlResponse {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ShortUrlList {
     pub urls: Vec<ShortUrlResponse>,
+}
+
+/// A configurable conversion endpoint that short links redirect to.
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ConversionEndpoint {
+    pub id: String,
+    pub name: String,
+    /// Base URL of the conversion service. Empty means "current site" (resolved
+    /// from the incoming request at redirect time).
+    #[serde(default)]
+    pub base_url: String,
+    /// API path on the endpoint service. Defaults to `/api/sub`.
+    #[serde(default = "default_endpoint_path")]
+    pub path: String,
+}
+
+fn default_endpoint_path() -> String {
+    DEFAULT_ENDPOINT_PATH.to_string()
+}
+
+/// Server configuration listing all conversion endpoints and the active default.
+#[derive(Serialize, Deserialize, Debug, Default)]
+pub struct EndpointsConfig {
+    #[serde(default)]
+    pub endpoints: Vec<ConversionEndpoint>,
+    /// ID of the endpoint that is currently enabled. Short links without an
+    /// explicit endpoint_id redirect to this one.
+    #[serde(default)]
+    pub default_endpoint: String,
 }
 
 async fn get_vfs() -> Result<VercelKvVfs, VfsError> {
@@ -98,6 +138,116 @@ fn get_full_short_url(request_url: &str, id: &str) -> String {
     let url_parts: Vec<&str> = request_url.split("/api/").collect();
     let base_url = url_parts[0];
     format!("{}/api/s/{}", base_url, id)
+}
+
+// Extract the origin (scheme + host + port) from a request URL
+fn get_origin(request_url: &str) -> String {
+    match url::Url::parse(request_url) {
+        Ok(parsed) => parsed.origin().ascii_serialization(),
+        Err(_) => String::new(),
+    }
+}
+
+// Load the endpoints configuration from the KV store. Falls back to an empty
+// config (i.e. "current site + /api/sub") when the file is missing.
+async fn load_endpoints_config(vfs: &VercelKvVfs) -> EndpointsConfig {
+    match vfs.read_file(ENDPOINTS_CONFIG_PATH).await {
+        Ok(content) => serde_json::from_slice::<EndpointsConfig>(&content)
+            .unwrap_or_else(|e| {
+                error!("Error parsing endpoints config: {}", e);
+                EndpointsConfig::default()
+            }),
+        Err(_) => EndpointsConfig::default(),
+    }
+}
+
+// Pick the endpoint to use: explicit link override > enabled default > first.
+fn select_endpoint<'a>(
+    config: &'a EndpointsConfig,
+    endpoint_id: Option<&str>,
+) -> Option<&'a ConversionEndpoint> {
+    if let Some(id) = endpoint_id {
+        if let Some(ep) = config.endpoints.iter().find(|e| e.id == id) {
+            return Some(ep);
+        }
+    }
+    if !config.default_endpoint.is_empty() {
+        if let Some(ep) = config
+            .endpoints
+            .iter()
+            .find(|e| e.id == config.default_endpoint)
+        {
+            return Some(ep);
+        }
+    }
+    config.endpoints.first()
+}
+
+// Serialize structured params into a URL-encoded query string (stable key order)
+fn build_query_string(params: &Value) -> String {
+    let Some(obj) = params.as_object() else {
+        return String::new();
+    };
+    let mut entries: Vec<(&String, &Value)> = obj.iter().collect();
+    entries.sort_by(|a, b| a.0.cmp(b.0));
+
+    let mut parts = Vec::with_capacity(entries.len());
+    for (key, value) in entries {
+        let key_enc = urlencoding::encode(key).into_owned();
+        let value_enc = match value {
+            Value::String(s) => urlencoding::encode(s).into_owned(),
+            Value::Number(n) => n.to_string(),
+            Value::Bool(true) => "1".to_string(),
+            Value::Bool(false) => "0".to_string(),
+            Value::Null => String::new(),
+            _ => urlencoding::encode(&value.to_string()).into_owned(),
+        };
+        parts.push(format!("{}={}", key_enc, value_enc));
+    }
+    parts.join("&")
+}
+
+// Combine an origin/base_url + path + query into a final redirect URL
+fn join_endpoint_url(base_url: &str, path: &str, query: &str) -> String {
+    let base = base_url.trim_end_matches('/');
+    let path = if path.is_empty() {
+        DEFAULT_ENDPOINT_PATH.to_string()
+    } else if path.starts_with('/') {
+        path.to_string()
+    } else {
+        format!("/{}", path)
+    };
+    let mut url = format!("{}{}", base, path);
+    if !query.is_empty() {
+        url.push('?');
+        url.push_str(query);
+    }
+    url
+}
+
+// Build the final redirect URL for a short link from its stored params and the
+// selected endpoint. Falls back to "current site + /api/sub" when no endpoint
+// is configured.
+fn build_resolved_target(
+    request_url: &str,
+    endpoint: Option<&ConversionEndpoint>,
+    params: &Value,
+) -> String {
+    let query = build_query_string(params);
+    match endpoint {
+        Some(ep) => {
+            let origin = if ep.base_url.trim().is_empty() {
+                get_origin(request_url)
+            } else {
+                ep.base_url.trim_end_matches('/').to_string()
+            };
+            join_endpoint_url(&origin, &ep.path, &query)
+        }
+        None => {
+            let origin = get_origin(request_url);
+            join_endpoint_url(&origin, DEFAULT_ENDPOINT_PATH, &query)
+        }
+    }
 }
 
 #[wasm_bindgen]
@@ -168,6 +318,8 @@ pub async fn short_url_create(
     // Create short URL data
     let short_url_data = ShortUrlData {
         target_url: request.target_url.clone(),
+        params: request.params.clone(),
+        endpoint_id: request.endpoint_id.clone(),
         created_at: current_timestamp(),
         last_used: None,
         use_count: 0,
@@ -197,6 +349,8 @@ pub async fn short_url_create(
         id: id.clone(),
         target_url: request.target_url,
         short_url,
+        params: short_url_data.params.clone(),
+        endpoint_id: short_url_data.endpoint_id.clone(),
         created_at: short_url_data.created_at,
         last_used: None,
         use_count: 0,
@@ -218,7 +372,7 @@ pub async fn short_url_create(
 }
 
 #[wasm_bindgen]
-pub async fn short_url_resolve(id: String) -> Result<JsValue, JsValue> {
+pub async fn short_url_resolve(id: String, request_url: String) -> Result<JsValue, JsValue> {
     info!("short_url_resolve called for ID: {}", id);
 
     // Validate ID
@@ -271,10 +425,28 @@ pub async fn short_url_resolve(id: String) -> Result<JsValue, JsValue> {
         // Continue even if update fails
     }
 
+    // Build the redirect target. Short links created with structured params are
+    // "permanent": they resolve against the currently enabled conversion endpoint
+    // at redirect time, so switching the enabled endpoint re-points them
+    // automatically. Legacy links (plain target_url) keep their stored URL.
+    let target_url = if let Some(params) = &short_url_data.params {
+        if params.as_object().map(|o| o.is_empty()).unwrap_or(true) {
+            short_url_data.target_url.clone()
+        } else {
+            let config = load_endpoints_config(&vfs).await;
+            let endpoint = select_endpoint(&config, short_url_data.endpoint_id.as_deref());
+            build_resolved_target(&request_url, endpoint, params)
+        }
+    } else {
+        short_url_data.target_url.clone()
+    };
+
     // Return target URL for redirection
     let response = json!({
-        "target_url": short_url_data.target_url,
-        "use_count": short_url_data.use_count
+        "target_url": target_url,
+        "use_count": short_url_data.use_count,
+        "endpoint_id": short_url_data.endpoint_id,
+        "params": short_url_data.params,
     });
 
     Ok(JsValue::from_str(&response.to_string()))
@@ -390,6 +562,8 @@ pub async fn short_url_list() -> Result<JsValue, JsValue> {
             id: filename.to_string(),
             target_url: short_url_data.target_url,
             short_url,
+            params: short_url_data.params.clone(),
+            endpoint_id: short_url_data.endpoint_id.clone(),
             created_at: short_url_data.created_at,
             last_used: short_url_data.last_used,
             use_count: short_url_data.use_count,
@@ -469,6 +643,22 @@ pub async fn short_url_update(id: String, request_json: String) -> Result<JsValu
         }
     }
 
+    if let Some(params) = request.get("params") {
+        short_url_data.params = if params.is_null() {
+            None
+        } else {
+            Some(params.clone())
+        };
+    }
+
+    if let Some(endpoint_id) = request.get("endpoint_id") {
+        short_url_data.endpoint_id = if endpoint_id.is_null() {
+            None
+        } else {
+            endpoint_id.as_str().map(|s| s.to_string())
+        };
+    }
+
     if let Some(description) = request.get("description") {
         short_url_data.description = if description.is_null() {
             None
@@ -499,6 +689,8 @@ pub async fn short_url_update(id: String, request_json: String) -> Result<JsValu
         "id": id,
         "target_url": short_url_data.target_url,
         "short_url": format!("/api/s/{}", id),
+        "params": short_url_data.params,
+        "endpoint_id": short_url_data.endpoint_id,
         "created_at": short_url_data.created_at,
         "last_used": short_url_data.last_used,
         "use_count": short_url_data.use_count,

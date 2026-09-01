@@ -5,6 +5,7 @@
 # wasm-pack intermediate outputs (the browser bundle is committed under www/vendor)
 /pkg-bundler
 /pkg-web
+/pkg-browser
 # WASM test project
 wasm-test/node_modules
 wasm-test/dist

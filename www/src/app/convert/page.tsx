@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, ChangeEvent, FormEvent, useEffect } from 'react';
+import React, { useState, useCallback, ChangeEvent, FormEvent, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { copyToClipboard } from '@/lib/clipboard';
 import {
@@ -9,7 +9,8 @@ import {
     SubResponseData,
     ErrorData,
     createShortUrl,
-    ShortUrlData
+    ShortUrlData,
+    IS_STATIC_EXPORT
 } from '@/lib/api-client';
 
 // Define supported targets
@@ -28,6 +29,10 @@ export default function ConvertPage() {
 
     // Track which fields have been explicitly set by the user
     const [setFields, setSetFields] = useState<Set<string>>(new Set(['target', 'url']));
+
+    // Guards the automatic conversion triggered from a short-link landing
+    // (`/convert?target=...&url=...`) against double runs (StrictMode).
+    const autoConverted = useRef(false);
 
     const [isLoading, setIsLoading] = useState(false);
     const [result, setResult] = useState<SubResponseData | null>(null);
@@ -117,6 +122,75 @@ export default function ConvertPage() {
             newSet.delete(fieldName);
             return newSet;
         });
+    }, []);
+
+    // Fields that map to `?flag=1` in the conversion query string.
+    const BOOL_FIELDS = new Set([
+        'new_name', 'script', 'classic', 'append_type', 'emoji', 'add_emoji',
+        'remove_emoji', 'list', 'sort', 'fdn', 'tfo', 'udp', 'scv', 'tls13',
+        'rename_node', 'expand', 'insert', 'prepend', 'strict', 'upload',
+    ]);
+    // Numeric query fields.
+    const NUM_FIELDS = new Set(['ver', 'interval']);
+
+    // Default download filename for a given target (mirrors handleInputChange).
+    const defaultFilenameForTarget = (target: string): string => {
+        if (target.startsWith('clash') || target === 'singbox') return 'config.yaml';
+        if (target === 'sssub' || target === 'ssd') return 'config.json';
+        if (['surge', 'quan', 'quanx', 'loon', 'surfboard', 'mellow'].includes(target)) return 'profile.conf';
+        return 'config.txt';
+    };
+
+    // Short-link landing: `/convert?target=clash&url=...` (used by permanent
+    // short links in pure static export, where `/api/*` routes don't exist).
+    // Populate the form from the query string and run the conversion once.
+    useEffect(() => {
+        if (autoConverted.current || typeof window === 'undefined') return;
+        const params = new URLSearchParams(window.location.search);
+        if (!params.get('url')) return;
+        autoConverted.current = true;
+
+        const initial: SubconverterFormParams = { target: 'clash', url: '' };
+        const fields = new Set<string>(['target', 'url']);
+
+        for (const [key, value] of params.entries()) {
+            if (value === '') continue;
+            if (BOOL_FIELDS.has(key)) {
+                (initial as any)[key] = value === '1' || value.toLowerCase() === 'true';
+            } else if (NUM_FIELDS.has(key)) {
+                const num = parseInt(value, 10);
+                if (!Number.isNaN(num)) (initial as any)[key] = num;
+            } else {
+                (initial as any)[key] = value;
+            }
+            fields.add(key);
+        }
+
+        // Ensure a sensible download filename even when the link omits it.
+        if (!initial.filename) {
+            initial.filename = defaultFilenameForTarget(initial.target || 'clash');
+            fields.add('filename');
+        }
+
+        setFormData(initial);
+        setSetFields(fields);
+
+        (async () => {
+            setIsLoading(true);
+            setError(null);
+            try {
+                const responseData = await convertSubscription(initial);
+                setResult(responseData);
+            } catch (err) {
+                console.error("Conversion API call failed:", err);
+                setError(err as ErrorData || {
+                    error: 'Failed to connect to the conversion API.',
+                    details: String(err)
+                });
+            } finally {
+                setIsLoading(false);
+            }
+        })();
     }, []);
 
     const handleSubmit = useCallback(async (e: FormEvent) => {
@@ -217,7 +291,11 @@ export default function ConvertPage() {
 
     // Generate API URL from form data
     const generateApiUrl = useCallback(() => {
-        const baseUrl = window.location.origin + '/api/sub';
+        // Pure static export has no /api/* routes: point at the /convert page
+        // (runs the conversion in-browser). Server-backed builds use /api/sub.
+        const baseUrl = IS_STATIC_EXPORT
+            ? window.location.origin + '/convert/'
+            : window.location.origin + '/api/sub';
         const params = new URLSearchParams();
 
         // Add all set fields to the URL params
@@ -247,8 +325,24 @@ export default function ConvertPage() {
             const apiUrl = generateApiUrl();
             const description = `${formData.target.toUpperCase()} conversion for ${formData.url.substring(0, 30)}${formData.url.length > 30 ? '...' : ''}`;
 
+            // Build the same structured params as generateApiUrl()'s query string.
+            // The short link stores these instead of the full URL, so it is
+            // "permanent": it always redirects to the currently enabled
+            // conversion endpoint (server configuration).
+            const params: Record<string, unknown> = {};
+            Object.entries(formData).forEach(([key, value]) => {
+                if (value !== undefined && value !== null && value !== '' && setFields.has(key)) {
+                    if (typeof value === 'boolean') {
+                        if (value) params[key] = '1';
+                    } else {
+                        params[key] = String(value);
+                    }
+                }
+            });
+
             const shortUrl = await createShortUrl({
                 target_url: apiUrl,
+                params,
                 description: description
             });
 

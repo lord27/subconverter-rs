@@ -170,6 +170,8 @@ export interface WasmShortUrlData {
     id: string;
     target_url: string;
     short_url: string;
+    params?: Record<string, unknown>;
+    endpoint_id?: string;
     created_at: number;
     last_used?: number;
     use_count: number;
@@ -370,6 +372,8 @@ function getOrigin(): string {
 
 export async function wasmCreateShortUrl(request: {
     target_url: string;
+    params?: Record<string, unknown>;
+    endpoint_id?: string;
     custom_id?: string;
     description?: string;
 }): Promise<WasmShortUrlData> {
@@ -409,7 +413,7 @@ export async function wasmDeleteShortUrl(id: string): Promise<void> {
 
 export async function wasmUpdateShortUrl(
     id: string,
-    updates: { target_url?: string; description?: string | null }
+    updates: { target_url?: string; params?: Record<string, unknown> | null; endpoint_id?: string | null; description?: string | null }
 ): Promise<WasmShortUrlData> {
     const wasm = await loadWasmModule();
     try {

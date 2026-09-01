@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ShortUrlData, listShortUrls, deleteShortUrl, createShortUrl, updateShortUrl, moveShortUrl } from "@/lib/api-client";
+import { ShortUrlData, listShortUrls, deleteShortUrl, createShortUrl, updateShortUrl, moveShortUrl, EndpointsConfig, ConversionEndpoint } from "@/lib/api-client";
+import EndpointManager from "@/components/EndpointManager";
 import { useRouter } from "next/navigation";
 import { copyToClipboard } from "@/lib/clipboard";
 
@@ -11,10 +12,16 @@ export default function SavedLinks() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [showNewLinkForm, setShowNewLinkForm] = useState(false);
-    const [newLink, setNewLink] = useState({ target_url: "", custom_id: "", description: "" });
+    const [newLink, setNewLink] = useState({ target_url: "", custom_id: "", description: "", endpoint_id: "" });
     const [editingLink, setEditingLink] = useState<ShortUrlData | null>(null);
     const [editCustomId, setEditCustomId] = useState<string>('');
+    const [endpoints, setEndpoints] = useState<ConversionEndpoint[]>([]);
     const router = useRouter();
+
+    // Keep the endpoint list in sync with the EndpointManager panel
+    const handleEndpointsChange = (config: EndpointsConfig) => {
+        setEndpoints(config.endpoints);
+    };
 
     // Load links on component mount
     useEffect(() => {
@@ -59,12 +66,13 @@ export default function SavedLinks() {
         try {
             const createdLink = await createShortUrl({
                 target_url: newLink.target_url,
+                endpoint_id: newLink.endpoint_id || undefined,
                 custom_id: newLink.custom_id || undefined,
                 description: newLink.description || undefined
             });
 
             setLinks([createdLink, ...links]);
-            setNewLink({ target_url: "", custom_id: "", description: "" });
+            setNewLink({ target_url: "", custom_id: "", description: "", endpoint_id: "" });
             setShowNewLinkForm(false);
             setError(null);
         } catch (err: any) {
@@ -87,6 +95,7 @@ export default function SavedLinks() {
                 // Otherwise, just update the existing short URL
                 updatedLink = await updateShortUrl(editingLink.id, {
                     target_url: editingLink.target_url,
+                    endpoint_id: editingLink.endpoint_id || null,
                     description: editingLink.description
                 });
             }
@@ -155,6 +164,8 @@ export default function SavedLinks() {
                     </div>
                 )}
 
+                <EndpointManager onConfigChange={handleEndpointsChange} />
+
                 {showNewLinkForm && (
                     <div className="bg-white/10 p-6 rounded-lg shadow-md mb-6">
                         <h2 className="text-xl font-bold mb-4">Create New Short URL</h2>
@@ -179,6 +190,25 @@ export default function SavedLinks() {
                                     onChange={(e) => setNewLink({ ...newLink, custom_id: e.target.value })}
                                     placeholder="my-custom-id"
                                 />
+                            </div>
+                            <div className="mb-4">
+                                <label className="block mb-2">Endpoint (optional)</label>
+                                <select
+                                    className="w-full p-2 bg-black/30 border border-gray-700 rounded"
+                                    value={newLink.endpoint_id}
+                                    onChange={(e) => setNewLink({ ...newLink, endpoint_id: e.target.value })}
+                                >
+                                    <option value="">Default (follow enabled endpoint)</option>
+                                    {endpoints.map((ep) => (
+                                        <option key={ep.id} value={ep.id}>
+                                            {ep.name} ({ep.id})
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-gray-400 mt-1">
+                                    Leave as Default: the link always redirects to the endpoint that is
+                                    currently enabled in the server configuration above.
+                                </p>
                             </div>
                             <div className="mb-4">
                                 <label className="block mb-2">Description (optional)</label>
@@ -213,6 +243,26 @@ export default function SavedLinks() {
                                     value={editingLink.target_url}
                                     onChange={(e) => setEditingLink({ ...editingLink, target_url: e.target.value })}
                                 />
+                            </div>
+                            <div className="mb-4">
+                                <label className="block mb-2">Endpoint</label>
+                                <select
+                                    className="w-full p-2 bg-black/30 border border-gray-700 rounded"
+                                    value={editingLink.endpoint_id || ""}
+                                    onChange={(e) =>
+                                        setEditingLink({
+                                            ...editingLink,
+                                            endpoint_id: e.target.value || undefined,
+                                        })
+                                    }
+                                >
+                                    <option value="">Default (follow enabled endpoint)</option>
+                                    {endpoints.map((ep) => (
+                                        <option key={ep.id} value={ep.id}>
+                                            {ep.name} ({ep.id})
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
                             <div className="mb-4">
                                 <label className="block mb-2">Custom ID (alias)</label>
@@ -305,6 +355,19 @@ export default function SavedLinks() {
                                                     {link.target_url}
                                                 </a>
                                             </div>
+                                            {link.params && (
+                                                <div className="flex items-center">
+                                                    <span className="text-sm font-medium text-gray-400 w-20">Endpoint:</span>
+                                                    <span className="text-sm text-gray-300 truncate max-w-lg">
+                                                        {link.endpoint_id
+                                                            ? `Fixed: ${link.endpoint_id}`
+                                                            : "Default (follows enabled endpoint)"}
+                                                        <span className="text-gray-500">
+                                                            {" "}· {Object.keys(link.params).length} param(s)
+                                                        </span>
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="mt-2 flex flex-wrap gap-3 text-xs">
