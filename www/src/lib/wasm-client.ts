@@ -25,6 +25,65 @@ function isBrowser(): boolean {
 }
 
 /**
+ * Rewrites `raw.githubusercontent.com` GET requests to the GitHub Contents API
+ * (`api.github.com`), which is reachable from more networks and sends proper
+ * CORS headers. Without this, file reads made by the WASM VFS fail in browser
+ * environments where raw.githubusercontent.com is blocked (403 / CORS errors),
+ * which broke conversion, settings and config loading in pure static export.
+ *
+ * `Accept: application/vnd.github.raw+json` makes the Contents API return the
+ * file bytes directly, so the caller sees an identical 200 response with the
+ * raw content — no Rust/WASM changes needed. Falls back to the original URL if
+ * the API request itself fails.
+ */
+let githubFetchPatched = false;
+
+function installGitHubFetchRewrite(): void {
+    if (githubFetchPatched || typeof window === 'undefined') return;
+    githubFetchPatched = true;
+
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+        const urlStr =
+            typeof input === 'string'
+                ? input
+                : input instanceof URL
+                    ? input.href
+                    : (input as Request).url;
+        const match = urlStr.match(
+            /^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/
+        );
+        if (!match) return originalFetch(input, init);
+
+        const method = (
+            init?.method ?? (input instanceof Request ? input.method : 'GET')
+        ).toUpperCase();
+        if (method !== 'GET') return originalFetch(input, init);
+
+        const [, owner, repo, branch, path] = match;
+        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(branch)}`;
+        const headers = new Headers(
+            init?.headers ?? (input instanceof Request ? input.headers : undefined)
+        );
+        // `Accept` is a CORS-safelisted header, so no preflight is triggered.
+        headers.set('Accept', 'application/vnd.github.raw+json');
+
+        try {
+            const response = await originalFetch(apiUrl, { ...init, headers });
+            if (response.ok) return response;
+            console.warn(
+                `[github-rewrite] Contents API returned ${response.status}, falling back to raw URL`,
+                apiUrl
+            );
+            return originalFetch(input, init);
+        } catch (err) {
+            console.warn('[github-rewrite] Contents API fetch failed, falling back to raw URL:', err);
+            return originalFetch(input, init);
+        }
+    };
+}
+
+/**
  * Lazily import and initialize the WASM module (idempotent).
  * Only callable in the browser — throws when invoked during SSR.
  */
@@ -32,6 +91,8 @@ export async function loadWasmModule(): Promise<WasmModule> {
     if (!isBrowser()) {
         throw new Error('WASM is only available in the browser (static export mode).');
     }
+    // Ensure GitHub raw fetches are rewritten before any WASM code runs.
+    installGitHubFetchRewrite();
     if (!modulePromise) {
         modulePromise = (async () => {
             const mod = await import('subconverter-wasm-browser');

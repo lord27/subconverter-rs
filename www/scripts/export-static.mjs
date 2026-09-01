@@ -13,7 +13,7 @@
  * Output: `dist/` — a fully static folder that can be hosted anywhere.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, renameSync, rmSync } from 'node:fs';
+import { existsSync, renameSync, rmSync, cpSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -44,6 +44,14 @@ const apiDir = join(root, 'src', 'app', 'api');
 // as an app-route directory and tries to collect the API routes.
 const backupDir = join(root, 'api.backup');
 
+// Monaco editor resources. jsdelivr (the default Monaco CDN) is unreachable
+// from many networks, so for static export we copy the editor from
+// node_modules into `public/monaco/vs` before the build (Next copies `public/`
+// verbatim into the output folder) and clean it up afterwards so it never
+// pollutes the source tree.
+const monacoSrcDir = join(root, 'node_modules', 'monaco-editor', 'min', 'vs');
+const monacoPubDir = join(root, 'public', 'monaco', 'vs');
+
 const nextBin = process.platform === 'win32'
   ? join(root, 'node_modules', '.bin', 'next.cmd')
   : join(root, 'node_modules', '.bin', 'next');
@@ -70,6 +78,18 @@ try {
     }
     renameSync(apiDir, backupDir);
     console.log('[static-export] Temporarily moved src/app/api -> api.backup');
+  }
+
+  // Fresh Monaco copy (clear any stale leftovers from a previous failed run).
+  if (existsSync(monacoPubDir)) {
+    rmSync(join(root, 'public', 'monaco'), { recursive: true, force: true });
+  }
+  if (existsSync(monacoSrcDir)) {
+    cpSync(monacoSrcDir, monacoPubDir, { recursive: true });
+    console.log('[static-export] Copied monaco-editor min/vs -> public/monaco/vs');
+  } else {
+    console.warn('[static-export] WARNING: monaco-editor not found at', monacoSrcDir);
+    console.warn('[static-export] The code editor page will fall back to the jsdelivr CDN.');
   }
 
   if (!existsSync(nextBin)) {
@@ -101,6 +121,11 @@ try {
   if (existsSync(backupDir)) {
     renameSync(backupDir, apiDir);
     console.log('[static-export] Restored src/app/api');
+  }
+  // Clean up the temporary Monaco copy so it never lands in the source tree.
+  if (existsSync(join(root, 'public', 'monaco'))) {
+    rmSync(join(root, 'public', 'monaco'), { recursive: true, force: true });
+    console.log('[static-export] Cleaned up temporary public/monaco');
   }
 }
 

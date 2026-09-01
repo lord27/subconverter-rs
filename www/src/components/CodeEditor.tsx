@@ -3,8 +3,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FileAttributes } from 'subconverter-wasm';
 import * as apiClient from '@/lib/api-client';
-import Editor, { Monaco } from '@monaco-editor/react';
+import Editor, { loader, Monaco } from '@monaco-editor/react';
 import { editor } from 'monaco-editor';
+
+// Pure static export: jsdelivr (the default Monaco CDN) is unreachable from
+// many networks (e.g. mainland China). The build script
+// (scripts/export-static.mjs) copies `node_modules/monaco-editor/min/vs` into
+// `public/monaco/vs` before `next build`, so we can load it from the same
+// origin instead. No-op in server mode (Vercel/Netlify keep using the CDN).
+if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_STATIC_EXPORT === 'true') {
+    loader.config({ paths: { vs: '/monaco/vs' } });
+}
 
 interface CodeEditorProps {
     filePath?: string | null;
