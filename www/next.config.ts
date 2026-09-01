@@ -18,19 +18,32 @@ const isNetlify = process.env.NETLIFY === 'true' ||
 const isVercel = process.env.VERCEL === 'true';
 const isDev = process.env.NODE_ENV === 'development';
 
+// Pure static export mode: build with `STATIC_EXPORT=true` to produce a
+// fully static `dist/` folder (no serverless API routes, WASM runs in-browser).
+const isStatic = process.env.STATIC_EXPORT === 'true';
+
 // Log environment info
 console.log('✅ Is Netlify environment:', isNetlify);
 console.log('✅ Is Vercel environment:', isVercel);
 console.log('✅ Is Development environment:', isDev);
+console.log('✅ Is Static export mode:', isStatic);
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   // Allows importing wasm files from pkg directory
   // transpilePackages: ['subconverter-wasm'],
 
+  // Pure static export configuration
+  output: isStatic ? 'export' : undefined,
+  distDir: isStatic ? 'dist' : '.next',
+  trailingSlash: isStatic,
+  images: {
+    unoptimized: true, // required for `output: 'export'`
+  },
+
   // Using serverExternalPackages to tell Next.js to resolve the WASM module at runtime
   // This ensures proper WASM loading in server environments like Netlify
-  serverExternalPackages: ['subconverter-wasm', '../pkg'],
+  ...(isStatic ? {} : { serverExternalPackages: ['subconverter-wasm', '../pkg'] }),
 
   // Webpack config to support WASM
   webpack: (config, { isServer, dev }) => {
@@ -47,17 +60,9 @@ const nextConfig: NextConfig = {
     // Configure WASM output location
     if (config.output) {
       // Ensure WASM is properly emitted to a predictable location
-      if (isNetlify) {
-        // For Netlify, use a completely predictable name and location
-        config.output.webassemblyModuleFilename = isServer
-          ? '../static/wasm/[modulehash].wasm'  // Server build
-          : 'static/wasm/[modulehash].wasm';    // Client build
-      } else {
-        // For other environments
-        config.output.webassemblyModuleFilename = isServer
-          ? '../static/wasm/[modulehash].wasm'  // Server build 
-          : 'static/wasm/[modulehash].wasm';    // Client build
-      }
+      config.output.webassemblyModuleFilename = isServer
+        ? '../static/wasm/[modulehash].wasm'  // Server build
+        : 'static/wasm/[modulehash].wasm';    // Client build
     }
 
     // Define environment variable to help with debugging WASM loading
@@ -66,26 +71,31 @@ const nextConfig: NextConfig = {
       new webpack.DefinePlugin({
         'process.env.WASM_DEBUG': JSON.stringify(true),
         'process.env.DEPLOY_ENV': JSON.stringify(
-          isNetlify ? 'netlify' : (isVercel ? 'vercel' : 'standard')
+          isNetlify ? 'netlify' : (isVercel ? 'vercel' : (isStatic ? 'static' : 'standard'))
         ),
+        'process.env.NEXT_PUBLIC_STATIC_EXPORT': JSON.stringify(isStatic ? 'true' : 'false'),
       })
     );
 
     // Make sure we don't interfere with the existing loaders
     return config;
   },
-  async rewrites() {
-    return [
-      // Rewrite all API calls to the pages/api directory
-      {
-        source: '/api/:path*',
-        destination: '/api/:path*',
-      },
-    ];
-  },
-  outputFileTracingIncludes: {
-    '/api/': ['./node_modules/subconverter-wasm/**/*'],
-  },
+  ...(isStatic ? {} : {
+    async rewrites() {
+      return [
+        // Rewrite all API calls to the pages/api directory
+        {
+          source: '/api/:path*',
+          destination: '/api/:path*',
+        },
+      ];
+    },
+  }),
+  ...(isStatic ? {} : {
+    outputFileTracingIncludes: {
+      '/api/': ['./node_modules/subconverter-wasm/**/*'],
+    },
+  }),
 };
 
 export default withNextIntl(nextConfig);

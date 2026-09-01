@@ -2,6 +2,9 @@
 /.vscode/launch.json
 /base/pref.toml
 /pkg
+# wasm-pack intermediate outputs (the browser bundle is committed under www/vendor)
+/pkg-bundler
+/pkg-web
 # WASM test project
 wasm-test/node_modules
 wasm-test/dist

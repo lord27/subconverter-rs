@@ -52,8 +52,11 @@ importers:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
       subconverter-wasm:
-        specifier: 0.2.34
-        version: 0.2.34
+        specifier: 0.2.36
+        version: 0.2.36
+      subconverter-wasm-browser:
+        specifier: file:./vendor/subconverter-wasm-browser
+        version: file:vendor/subconverter-wasm-browser
     devDependencies:
       '@eslint/eslintrc':
         specifier: ^3.3.6
@@ -3271,8 +3274,11 @@ packages:
       babel-plugin-macros:
         optional: true
 
-  subconverter-wasm@0.2.34:
-    resolution: {integrity: sha512-s6zhrK0mAHThEw+yfHFAOEPtyP5TtX3tdI89RT8Zc+MUa3G3/cnjNnV9VPpl2qJHA2TQv/dX4MPtkUS75NaRkg==}
+  subconverter-wasm-browser@file:vendor/subconverter-wasm-browser:
+    resolution: {directory: vendor/subconverter-wasm-browser, type: directory}
+
+  subconverter-wasm@0.2.36:
+    resolution: {integrity: sha512-TS3lQzw1eKs7WjHtAQBjdoVwl24+dGQ3K7zaJnPu1uPrCzzVCXjap3JVe6dgVhtLBnt81QrvAcfgvZgCNmZbLw==}
 
   supports-color@7.2.0:
     resolution: {integrity: sha512-qpCAvRl9stuOHveKsn7HncJRvv501qIacKzQlO/+Lwxc9+0q2wLyv4Dfvt80/DPn2pqOBsJdDiogXGR9+OvwRw==}
@@ -6877,7 +6883,9 @@ snapshots:
       client-only: 0.0.1
       react: 19.2.8
 
-  subconverter-wasm@0.2.34:
+  subconverter-wasm-browser@file:vendor/subconverter-wasm-browser: {}
+
+  subconverter-wasm@0.2.36:
     dependencies:
       '@netlify/blobs': 8.2.0
       '@vercel/kv': 3.0.0

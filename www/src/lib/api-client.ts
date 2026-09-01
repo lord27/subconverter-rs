@@ -1,4 +1,14 @@
 import { FileAttributes } from 'subconverter-wasm';
+import * as wasmClient from './wasm-client';
+
+/**
+ * Pure static export mode: `next build` with `STATIC_EXPORT=true` produces a
+ * fully static `dist/` folder with no serverless API routes. In this mode the
+ * client talks directly to the WASM module running inside the browser.
+ */
+const IS_STATIC_EXPORT =
+    typeof process !== 'undefined' &&
+    process.env.NEXT_PUBLIC_STATIC_EXPORT === 'true';
 
 /**
  * Response data from the subscription converter API
@@ -109,6 +119,16 @@ export async function convertSubscription(formData: Partial<SubconverterFormPara
 
     console.log("Sending conversion request with payload:", payload);
 
+    if (IS_STATIC_EXPORT) {
+        const result = await wasmClient.wasmConvertSubscription(payload);
+        return {
+            content: result.content,
+            content_type: result.content_type,
+            headers: result.headers,
+            status_code: result.status_code
+        };
+    }
+
     const response = await fetch('/api/sub', {
         method: 'POST',
         headers: {
@@ -154,6 +174,10 @@ export async function convertSubscription(formData: Partial<SubconverterFormPara
  * Update rules from configured GitHub repositories
  */
 export async function updateRules(configPath?: string): Promise<RulesUpdateResult> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmUpdateRules(configPath);
+    }
+
     const response = await fetch('/api/admin/rules/update', {
         method: 'POST',
         headers: {
@@ -185,6 +209,10 @@ export async function updateRules(configPath?: string): Promise<RulesUpdateResul
  * Read file content from the server
  */
 export async function readFile(path: string): Promise<string> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmReadFile(path);
+    }
+
     const response = await fetch(`/api/admin/${encodeURIComponent(path)}`);
 
     if (!response.ok) {
@@ -200,6 +228,10 @@ export async function readFile(path: string): Promise<string> {
  * Write content to a file on the server
  */
 export async function writeFile(path: string, content: string): Promise<void> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmWriteFile(path, content);
+    }
+
     const response = await fetch(`/api/admin/${encodeURIComponent(path)}`, {
         method: 'POST',
         headers: {
@@ -218,6 +250,10 @@ export async function writeFile(path: string, content: string): Promise<void> {
  * Delete a file or directory on the server
  */
 export async function deleteFile(path: string): Promise<void> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmDeleteFile(path);
+    }
+
     const response = await fetch(`/api/admin/${encodeURIComponent(path)}`, {
         method: 'DELETE',
     });
@@ -232,6 +268,10 @@ export async function deleteFile(path: string): Promise<void> {
  * Check if a file exists on the server
  */
 export async function checkFileExists(path: string): Promise<boolean> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmCheckFileExists(path);
+    }
+
     const response = await fetch(`/api/admin/${encodeURIComponent(path)}?exists=true`);
 
     if (!response.ok) {
@@ -246,6 +286,10 @@ export async function checkFileExists(path: string): Promise<boolean> {
  * Get file attributes from the server
  */
 export async function getFileAttributes(path: string): Promise<FileAttributes> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmGetFileAttributes(path);
+    }
+
     const response = await fetch(`/api/admin/${encodeURIComponent(path)}?attributes=true`);
 
     if (!response.ok) {
@@ -261,6 +305,10 @@ export async function getFileAttributes(path: string): Promise<FileAttributes> {
  * Create a directory on the server
  */
 export async function createDirectory(path: string): Promise<void> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmCreateDirectory(path);
+    }
+
     const response = await fetch(`/api/admin/${encodeURIComponent(path)}`, {
         method: 'POST',
         headers: {
@@ -279,6 +327,10 @@ export async function createDirectory(path: string): Promise<void> {
  * List files in a directory
  */
 export async function listDirectory(path: string = ''): Promise<any> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmListDirectory(path);
+    }
+
     const response = await fetch(`/api/admin/list?path=${encodeURIComponent(path)}`);
 
     if (!response.ok) {
@@ -297,6 +349,10 @@ export async function loadGitHubDirectory(
     shallow: boolean = true,
     recursive: boolean = true
 ): Promise<any> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmLoadGitHubDirectory(path, shallow, recursive);
+    }
+
     const response = await fetch(
         `/api/admin/github?path=${encodeURIComponent(path)}&shallow=${shallow}&recursive=${recursive}`
     );
@@ -354,6 +410,10 @@ export interface CreateShortUrlRequest {
  * Create a new short URL
  */
 export async function createShortUrl(request: CreateShortUrlRequest): Promise<ShortUrlData> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmCreateShortUrl(request);
+    }
+
     const response = await fetch('/api/s', {
         method: 'POST',
         headers: {
@@ -382,6 +442,10 @@ export async function createShortUrl(request: CreateShortUrlRequest): Promise<Sh
  * Get list of all short URLs
  */
 export async function listShortUrls(): Promise<ShortUrlData[]> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmListShortUrls();
+    }
+
     const response = await fetch('/api/s');
 
     if (!response.ok) {
@@ -405,6 +469,10 @@ export async function listShortUrls(): Promise<ShortUrlData[]> {
  * Delete a short URL
  */
 export async function deleteShortUrl(id: string): Promise<void> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmDeleteShortUrl(id);
+    }
+
     const response = await fetch(`/api/s/${encodeURIComponent(id)}`, {
         method: 'DELETE',
     });
@@ -427,6 +495,10 @@ export async function deleteShortUrl(id: string): Promise<void> {
  * Update a short URL
  */
 export async function updateShortUrl(id: string, updates: { target_url?: string; description?: string | null; custom_id?: string }): Promise<ShortUrlData> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmUpdateShortUrl(id, updates);
+    }
+
     const response = await fetch(`/api/s/${encodeURIComponent(id)}`, {
         method: 'PUT',
         headers: {
@@ -455,6 +527,10 @@ export async function updateShortUrl(id: string, updates: { target_url?: string;
  * Move a short URL to a new ID/alias
  */
 export async function moveShortUrl(id: string, newId: string): Promise<ShortUrlData> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmMoveShortUrl(id, newId);
+    }
+
     const response = await fetch(`/api/s/${encodeURIComponent(id)}/move`, {
         method: 'POST',
         headers: {
@@ -514,6 +590,10 @@ export interface AppDownloadConfig {
  * Get available application downloads
  */
 export async function getAvailableDownloads(): Promise<AppDownloadInfo[]> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmGetAvailableDownloads();
+    }
+
     const response = await fetch('/api/downloads');
 
     if (!response.ok) {
@@ -537,6 +617,11 @@ export async function getAvailableDownloads(): Promise<AppDownloadInfo[]> {
  * Returns a URL to initiate the download
  */
 export function getDownloadUrl(appId: string, platform: string): string {
+    if (IS_STATIC_EXPORT) {
+        // In static mode downloads are served straight from the release asset;
+        // the actual URL is already present in AppDownloadInfo.download_url.
+        return '';
+    }
     return `/api/downloads/${encodeURIComponent(appId)}/${encodeURIComponent(platform)}`;
 }
 
@@ -545,6 +630,10 @@ export function getDownloadUrl(appId: string, platform: string): string {
  * This is only available to admin users
  */
 export async function getDownloadConfigs(): Promise<AppDownloadConfig[]> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmGetDownloadConfigs();
+    }
+
     const response = await fetch('/api/admin/downloads');
 
     if (!response.ok) {
@@ -569,6 +658,10 @@ export async function getDownloadConfigs(): Promise<AppDownloadConfig[]> {
  * This is only available to admin users
  */
 export async function updateDownloadConfigs(downloads: AppDownloadConfig[]): Promise<boolean> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmUpdateDownloadConfigs(downloads);
+    }
+
     const response = await fetch('/api/admin/downloads', {
         method: 'POST',
         headers: {
@@ -664,6 +757,10 @@ export interface ServerSettings {
  * Get current server settings
  */
 export async function getServerSettings(): Promise<ServerSettings> {
+    if (IS_STATIC_EXPORT) {
+        throw new Error('Server settings are not available in static export mode.');
+    }
+
     const response = await fetch('/api/admin/settings');
 
     if (!response.ok) {
@@ -686,6 +783,10 @@ export async function getServerSettings(): Promise<ServerSettings> {
  * Update server settings
  */
 export async function updateServerSettings(settings: Partial<ServerSettings>): Promise<ServerSettings> {
+    if (IS_STATIC_EXPORT) {
+        throw new Error('Server settings are not available in static export mode.');
+    }
+
     const response = await fetch('/api/admin/settings', {
         method: 'PUT',
         headers: {
@@ -714,6 +815,12 @@ export async function updateServerSettings(settings: Partial<ServerSettings>): P
  * Export settings to file
  */
 export async function exportSettings(format: 'yaml' | 'toml' | 'ini' = 'yaml'): Promise<Blob> {
+    if (IS_STATIC_EXPORT) {
+        // Static mode: read the pref file from the in-browser VFS and wrap it as a Blob.
+        const content = await readSettingsFile();
+        return new Blob([content], { type: 'application/octet-stream' });
+    }
+
     const response = await fetch(`/api/admin/settings/export?format=${format}`);
 
     if (!response.ok) {
@@ -736,6 +843,13 @@ export async function exportSettings(format: 'yaml' | 'toml' | 'ini' = 'yaml'): 
  * Import settings from file
  */
 export async function importSettings(file: File): Promise<ServerSettings> {
+    if (IS_STATIC_EXPORT) {
+        // Static mode: persist the imported pref file into the in-browser VFS.
+        const content = await file.text();
+        await writeFile('pref.yml', content);
+        return {} as ServerSettings;
+    }
+
     const formData = new FormData();
     formData.append('file', file);
 
@@ -804,6 +918,10 @@ export async function writeSettingsFile(content: string): Promise<void> {
  */
 export async function initSettings(prefPath: string = ''): Promise<boolean> {
     try {
+        if (IS_STATIC_EXPORT) {
+            return wasmClient.wasmInitSettings(prefPath);
+        }
+
         const response = await fetch('/api/sub/init', {
             method: 'POST',
             headers: {
@@ -842,6 +960,10 @@ export async function initSettings(prefPath: string = ''): Promise<boolean> {
  * Returns true if the GitHub load was triggered (likely first run), false otherwise.
  */
 export async function initializeWebApp(): Promise<{ success: boolean; githubLoadTriggered: boolean; message: string }> {
+    if (IS_STATIC_EXPORT) {
+        return wasmClient.wasmInitializeWebApp();
+    }
+
     const response = await fetch('/api/init');
 
     const data = await response.json();

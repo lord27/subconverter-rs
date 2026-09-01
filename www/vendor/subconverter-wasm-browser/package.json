@@ -1,0 +1,10 @@
+{
+  "name": "subconverter-wasm-browser",
+  "type": "module",
+  "description": "Browser (wasm-pack --target web) build of the subconverter WASM core — used by the pure static export build. Bundled with a browser-only KV binding backed by localStorage.",
+  "version": "0.2.36",
+  "license": "GPL-3.0+",
+  "main": "libsubconverter.js",
+  "types": "libsubconverter.d.ts",
+  "sideEffects": false
+}

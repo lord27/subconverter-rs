@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "deploy:netlify": "NETLIFY=true netlify deploy --build"
+    "deploy:netlify": "NETLIFY=true netlify deploy --build",
+    "build:static": "node scripts/export-static.mjs"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
@@ -24,7 +25,8 @@
     "postcss": "^8.5.26",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
-    "subconverter-wasm": "0.2.36"
+    "subconverter-wasm": "0.2.36",
+    "subconverter-wasm-browser": "file:./vendor/subconverter-wasm-browser"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.6",

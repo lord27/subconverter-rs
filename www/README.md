@@ -49,6 +49,39 @@ A modern web UI for the subconverter-rs project, deployable to Vercel with a sin
 yarn build
 ```
 
+### Build as Pure Static Site (`dist/`)
+
+The app can also be exported as a **fully static folder** — no server, no
+serverless functions. In this mode the subconverter WASM engine runs entirely
+inside the browser, short URLs / VFS files are persisted in `localStorage`, and
+the output can be hosted on any static host (GitHub Pages, Nginx, S3, …).
+
+```bash
+npm run build:static
+# or: node scripts/export-static.mjs
+```
+
+Output: `dist/`
+
+Notes:
+
+- The build script temporarily moves `src/app/api` (Next.js Route Handlers are
+  unsupported with `output: 'export'`) aside and restores it afterwards.
+- The browser WASM bundle is committed under `vendor/subconverter-wasm-browser`
+  (wasm-pack `--target web`, built from the Rust core). To rebuild it:
+
+  ```bash
+  # from the repo root (requires rustup + wasm32-unknown-unknown + wasm-pack)
+  wasm-pack build --release --target web --out-dir pkg-web
+  # then copy pkg-web/* into www/vendor/subconverter-wasm-browser/
+  # and replace its snippets/<hash>/js/kv_bindings.js with
+  # www/scripts/browser-kv-bindings.js (browser + localStorage edition)
+  ```
+
+- `localStorage` persistence: short links, edited VFS files and download
+  configs survive page reloads (degrading to in-memory only when storage is
+  unavailable).
+
 ## Deployment
 
 The app is optimized for deployment on Vercel. Simply connect your GitHub repository to Vercel and deploy.
