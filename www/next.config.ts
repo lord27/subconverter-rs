@@ -22,6 +22,13 @@ const isDev = process.env.NODE_ENV === 'development';
 // fully static `dist/` folder (no serverless API routes, WASM runs in-browser).
 const isStatic = process.env.STATIC_EXPORT === 'true';
 
+// Static export + API mode: build with `STATIC_EXPORT_API=true` (together with
+// `STATIC_EXPORT=true`) so the static pages talk to the `/api/*` endpoints —
+// proxied by Nginx to a Node backend whose storage is SQLite — instead of the
+// in-browser WASM / localStorage path. Leave unset to keep the original
+// fully-browser behavior.
+const staticApiMode = process.env.STATIC_EXPORT_API === 'true';
+
 // Log environment info
 console.log('✅ Is Netlify environment:', isNetlify);
 console.log('✅ Is Vercel environment:', isVercel);
@@ -75,7 +82,13 @@ const nextConfig: NextConfig = {
         'process.env.DEPLOY_ENV': JSON.stringify(
           isNetlify ? 'netlify' : (isVercel ? 'vercel' : (isStatic ? 'static' : 'standard'))
         ),
-        'process.env.NEXT_PUBLIC_STATIC_EXPORT': JSON.stringify(isStatic ? 'true' : 'false'),
+        // Static build: whether the pages should use the in-browser WASM.
+        // `NEXT_PUBLIC_STATIC_EXPORT=true` -> browser WASM/localStorage;
+        // `false` (STATIC_EXPORT_API mode) -> fetch `/api/*` (proxied backend).
+        'process.env.NEXT_PUBLIC_STATIC_EXPORT': JSON.stringify(isStatic && !staticApiMode ? 'true' : 'false'),
+        // Static build marker: static-only resources (e.g. local Monaco) that
+        // apply regardless of the data channel (browser WASM or proxied API).
+        'process.env.NEXT_PUBLIC_IS_STATIC': JSON.stringify(isStatic ? 'true' : 'false'),
       })
     );
 

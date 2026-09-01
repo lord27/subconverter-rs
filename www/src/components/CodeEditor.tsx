@@ -11,7 +11,7 @@ import { editor } from 'monaco-editor';
 // (scripts/export-static.mjs) copies `node_modules/monaco-editor/min/vs` into
 // `public/monaco/vs` before `next build`, so we can load it from the same
 // origin instead. No-op in server mode (Vercel/Netlify keep using the CDN).
-if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_STATIC_EXPORT === 'true') {
+if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_IS_STATIC === 'true') {
     loader.config({ paths: { vs: '/monaco/vs' } });
 }
 

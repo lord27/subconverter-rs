@@ -2,9 +2,13 @@ import { FileAttributes } from 'subconverter-wasm';
 import * as wasmClient from './wasm-client';
 
 /**
- * Pure static export mode: `next build` with `STATIC_EXPORT=true` produces a
- * fully static `dist/` folder with no serverless API routes. In this mode the
- * client talks directly to the WASM module running inside the browser.
+ * Static export mode: `next build` with `STATIC_EXPORT=true` produces a fully
+ * static `dist/` folder with no serverless API routes. Two data channels exist:
+ *   - default (`NEXT_PUBLIC_STATIC_EXPORT=true`): client talks directly to the
+ *     WASM module inside the browser (data in localStorage);
+ *   - API mode (`STATIC_EXPORT_API=true` at build time → constant below is
+ *     `false`): pages fetch `/api/*`, proxied by Nginx to a Node backend whose
+ *     storage is SQLite — data is shared and persistent across all users.
  */
 const IS_STATIC_EXPORT =
     typeof process !== 'undefined' &&
