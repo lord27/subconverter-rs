@@ -24,6 +24,138 @@ function isNetlifyEnvironment() {
         (process.cwd && process.cwd() === '/var/task');
 }
 
+// ---------------------------------------------------------------------------
+// SQLite-backed KV adapter for self-hosted deployments (e.g. CentOS + 宝塔).
+//
+// The wasm-bindgen glue `require()`s this file at runtime — it is NOT bundled
+// into the .wasm binary — so changing the storage backend here takes effect
+// immediately without rebuilding the WASM package.
+//
+// Drivers (tried in order):
+//   1. Node's built-in `node:sqlite` (Node >= 22.5; default on 23.4+; stable
+//      on 24+). Zero dependencies, no compilation.
+//   2. The `better-sqlite3` npm package (same synchronous API).
+//   3. Neither available -> returns `null`, caller falls back to in-memory.
+//
+// DB file location:
+//   - `SUB_KC_DB_PATH` env var (absolute or relative to cwd) if set
+//   - otherwise `<cwd>/data/subconverter.db`
+//
+// Schema: a single `kv_store` table keyed by the VFS storage key
+// (e.g. `short/b2dLjN.json`), values stored as BLOBs.
+// ---------------------------------------------------------------------------
+function createSqliteKv() {
+    if (typeof process === 'undefined' || typeof process.cwd !== 'function') {
+        return null;
+    }
+
+    let useNodeSqlite = false;
+    let BetterSqlite3 = null;
+    try {
+        require.resolve('node:sqlite');
+        useNodeSqlite = true;
+    } catch (_) {
+        try {
+            BetterSqlite3 = require('better-sqlite3');
+        } catch (_) {
+            console.warn(
+                '[kv] SQLite unavailable (need Node >= 22.5 with node:sqlite, or the better-sqlite3 package). ' +
+                'Falling back to in-memory KV storage — data will be lost on restart.'
+            );
+            return null;
+        }
+    }
+
+    const path = require('path');
+    const fs = require('fs');
+
+    const dbPath = process.env.SUB_KC_DB_PATH
+        ? path.resolve(process.env.SUB_KC_DB_PATH)
+        : path.join(process.cwd(), 'data', 'subconverter.db');
+
+    const dir = path.dirname(dbPath);
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
+
+    let db;
+    if (useNodeSqlite) {
+        const { DatabaseSync } = require('node:sqlite');
+        db = new DatabaseSync(dbPath);
+    } else {
+        db = new BetterSqlite3(dbPath);
+    }
+
+    db.exec(`
+        CREATE TABLE IF NOT EXISTS kv_store (
+            key   TEXT PRIMARY KEY,
+            value BLOB NOT NULL
+        );
+        PRAGMA journal_mode = WAL;
+        PRAGMA synchronous = NORMAL;
+    `);
+
+    const stmtGet = db.prepare('SELECT value FROM kv_store WHERE key = ?');
+    const stmtSet = db.prepare(
+        'INSERT INTO kv_store (key, value) VALUES (?, ?) ' +
+        'ON CONFLICT(key) DO UPDATE SET value = excluded.value'
+    );
+    const stmtExists = db.prepare('SELECT 1 FROM kv_store WHERE key = ? LIMIT 1');
+    const stmtDel = db.prepare('DELETE FROM kv_store WHERE key = ?');
+
+    // Normalize Uint8Array / string into a Buffer for BLOB binding.
+    function toBuffer(value) {
+        if (value instanceof Uint8Array) {
+            return Buffer.from(value.buffer, value.byteOffset, value.byteLength);
+        }
+        if (typeof value === 'string') {
+            return Buffer.from(value, 'utf8');
+        }
+        return value;
+    }
+
+    console.log(`[kv] Using SQLite for KV storage (db: ${dbPath})`);
+
+    return {
+        _sqliteDbPath: dbPath,
+        get: async (key) => {
+            const row = stmtGet.get(key);
+            // BLOBs come back as Uint8Array (node:sqlite) or Buffer
+            // (better-sqlite3) — both handled by kv_get().
+            return row && row.value !== null && row.value !== undefined ? row.value : null;
+        },
+        set: async (key, value) => {
+            stmtSet.run(key, toBuffer(value));
+            return "OK";
+        },
+        exists: async (key) => {
+            return stmtExists.get(key) ? 1 : 0;
+        },
+        del: async (key) => {
+            const info = stmtDel.run(key);
+            return info.changes > 0 ? 1 : 0;
+        },
+        scan: async (cursor, options = {}) => {
+            const { match = "*", count = 100 } = options;
+            // Convert a glob pattern (`short*`, `*`) into a SQL LIKE pattern.
+            let like = match;
+            if (like === "*") {
+                like = "%";
+            } else {
+                like = like.replace(/[%_]/g, (c) => "\\" + c).replace(/\*/g, "%");
+            }
+            const rows = db
+                .prepare("SELECT key FROM kv_store WHERE key LIKE ? ESCAPE '\\' ORDER BY key")
+                .all(like);
+            const allKeys = rows.map((r) => r.key);
+            const start = parseInt(cursor, 10) || 0;
+            const end = Math.min(start + count, allKeys.length);
+            const next = end < allKeys.length ? String(end) : '0';
+            return [next, allKeys.slice(start, end)];
+        },
+    };
+}
+
 // Function to read environment variables from various runtimes
 // This is needed because std::env::var doesn't work in WebAssembly
 function getenv(name, defaultValue = "") {
@@ -161,27 +293,34 @@ async function getKv() {
                     throw error; // Let the fallback handle it
                 }
             } else {
-                // Use local storage fallback (remains unversioned)
-                console.log("No KV storage environment detected, using in-memory fallback (unversioned)");
-                // Create an in-memory implementation that mimics the Vercel KV API
-                kv = {
-                    get: async (key) => localStorageMap.get(key) || null,
-                    set: async (key, value) => { localStorageMap.set(key, value); return "OK"; },
-                    exists: async (key) => localStorageMap.has(key) ? 1 : 0,
-                    scan: async (cursor, options = {}) => {
-                        const { match = "*", count = 10 } = options;
-                        const pattern = match.replace(/\*/g, ".*");
-                        const regex = new RegExp(`^${pattern}$`);
-                        const allKeys = [...localStorageMap.keys()];
-                        const matchingKeys = allKeys.filter(key => regex.test(key));
-                        const startIndex = parseInt(cursor) || 0;
-                        const endIndex = Math.min(startIndex + count, matchingKeys.length);
-                        const keys = matchingKeys.slice(startIndex, endIndex);
-                        const nextCursor = endIndex < matchingKeys.length ? String(endIndex) : '0';
-                        return [nextCursor, keys];
-                    },
-                    del: async (key) => localStorageMap.delete(key) ? 1 : 0
-                };
+                // Self-hosted deployment (e.g. CentOS + 宝塔): prefer SQLite so
+                // data survives restarts and is shared across all users.
+                const sqliteKv = createSqliteKv();
+                if (sqliteKv) {
+                    kv = sqliteKv;
+                } else {
+                    // Use local storage fallback (remains unversioned)
+                    console.log("No KV storage environment detected, using in-memory fallback (unversioned)");
+                    // Create an in-memory implementation that mimics the Vercel KV API
+                    kv = {
+                        get: async (key) => localStorageMap.get(key) || null,
+                        set: async (key, value) => { localStorageMap.set(key, value); return "OK"; },
+                        exists: async (key) => localStorageMap.has(key) ? 1 : 0,
+                        scan: async (cursor, options = {}) => {
+                            const { match = "*", count = 10 } = options;
+                            const pattern = match.replace(/\*/g, ".*");
+                            const regex = new RegExp(`^${pattern}$`);
+                            const allKeys = [...localStorageMap.keys()];
+                            const matchingKeys = allKeys.filter(key => regex.test(key));
+                            const startIndex = parseInt(cursor) || 0;
+                            const endIndex = Math.min(startIndex + count, matchingKeys.length);
+                            const keys = matchingKeys.slice(startIndex, endIndex);
+                            const nextCursor = endIndex < matchingKeys.length ? String(endIndex) : '0';
+                            return [nextCursor, keys];
+                        },
+                        del: async (key) => localStorageMap.delete(key) ? 1 : 0
+                    };
+                }
             }
         } catch (error) {
             // Error during initialization, use fallback (remains unversioned)

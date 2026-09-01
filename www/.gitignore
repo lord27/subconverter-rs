@@ -21,6 +21,9 @@
 # production
 /build
 
+# sqlite data (self-hosted deployments)
+/data
+
 # misc
 .DS_Store
 *.pem

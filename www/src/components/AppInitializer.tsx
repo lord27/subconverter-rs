@@ -17,6 +17,10 @@ export default function AppInitializer({ children }: { children: React.ReactNode
     // `/startup/` while STARTUP_PATH is `/startup`. Normalize before comparing
     // to avoid an infinite redirect loop that leaves the page blank.
     const isStartupPath = pathname.replace(/\/+$/, '') === STARTUP_PATH;
+    // Short-link paths (`/api/s/<id>`) are resolved client-side by the 404 page
+    // (`not-found.tsx`). Visitors landing directly on a short link must NOT be
+    // bounced to the startup page — otherwise the redirect can never run.
+    const isShortUrlPath = /^\/api\/s\//.test(pathname);
 
     useEffect(() => {
         // Check localStorage only on the client side
@@ -26,7 +30,8 @@ export default function AppInitializer({ children }: { children: React.ReactNode
         console.log(`AppInitializer: Initialized flag = ${initialized}`);
 
         // If not initialized and not already on the startup page, redirect
-        if (!initialized && !isStartupPath) {
+        // (short-link paths are exempt — see isShortUrlPath above).
+        if (!initialized && !isStartupPath && !isShortUrlPath) {
             console.log(`AppInitializer: Redirecting to ${STARTUP_PATH}`);
             router.replace(STARTUP_PATH);
         } else if (initialized && isStartupPath) {
@@ -34,11 +39,16 @@ export default function AppInitializer({ children }: { children: React.ReactNode
             console.log(`AppInitializer: Already initialized, redirecting from ${STARTUP_PATH} to /`);
             router.replace('/');
         }
-    }, [pathname, isStartupPath, router]);
+    }, [pathname, isStartupPath, isShortUrlPath, router]);
 
     // Don't render children until the initialization check is complete and successful,
-    // or if we are already on the startup page (let it handle its own rendering)
-    if (isInitialized === null || (!isInitialized && !isStartupPath) || (isInitialized && isStartupPath)) {
+    // or if we are already on the startup page (let it handle its own rendering).
+    // Short-link paths are exempt so the 404 page can attempt the client-side redirect.
+    if (
+        isInitialized === null ||
+        (!isInitialized && !isStartupPath && !isShortUrlPath) ||
+        (isInitialized && isStartupPath)
+    ) {
         // Render minimal content or a loading indicator while checking/redirecting
         // Returning null prevents rendering children during the redirect flicker
         return null;

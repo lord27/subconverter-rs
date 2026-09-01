@@ -3,9 +3,9 @@
   "version": "0.2.13-beta.dev.36b38f2",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/apply-kv-sqlite.mjs && next dev",
     "rebuild:wasm:dev": "cd .. && ./scripts/build-wasm.sh && cd www && pnpm dev",
-    "build": "next build",
+    "build": "node scripts/apply-kv-sqlite.mjs && next build",
     "start": "next start",
     "lint": "next lint",
     "deploy:netlify": "NETLIFY=true netlify deploy --build",
