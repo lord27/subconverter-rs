@@ -35,7 +35,9 @@ const nextConfig: NextConfig = {
 
   // Pure static export configuration
   output: isStatic ? 'export' : undefined,
-  distDir: isStatic ? 'dist' : '.next',
+  // STATIC_DIST_DIR allows overriding the output folder (used by the build
+  // script when the default `dist/` is locked by a local process).
+  distDir: isStatic ? (process.env.STATIC_DIST_DIR || 'dist') : '.next',
   trailingSlash: isStatic,
   images: {
     unoptimized: true, // required for `output: 'export'`
