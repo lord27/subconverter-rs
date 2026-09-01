@@ -25,18 +25,43 @@ function isBrowser(): boolean {
 }
 
 /**
- * Rewrites `raw.githubusercontent.com` GET requests to the GitHub Contents API
- * (`api.github.com`), which is reachable from more networks and sends proper
- * CORS headers. Without this, file reads made by the WASM VFS fail in browser
- * environments where raw.githubusercontent.com is blocked (403 / CORS errors),
- * which broke conversion, settings and config loading in pure static export.
+ * Rewrites GitHub-hosted GET requests made by the WASM VFS so they work from a
+ * browser in pure static export:
  *
- * `Accept: application/vnd.github.raw+json` makes the Contents API return the
- * file bytes directly, so the caller sees an identical 200 response with the
- * raw content — no Rust/WASM changes needed. Falls back to the original URL if
- * the API request itself fails.
+ *  1. `raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}` (file reads)
+ *     -> `cdn.jsdelivr.net/gh/{owner}/{repo}@{branch}/{path}`. jsDelivr has no
+ *     unauthenticated rate limit and sends CORS headers, unlike GitHub's raw /
+ *     Contents API which quickly 403s an anonymous browser session.
+ *  2. `api.github.com/repos/{owner}/{repo}/git/trees/{branch}?recursive=1`
+ *     (directory listing used by `initialize_subconverter_webapp`)
+ *     -> `data.jsdelivr.com/v1/packages/gh/{owner}/{repo}@{branch}?structure=flat`,
+ *     converted back into the GitHub `git/trees` JSON shape the WASM expects.
+ *
+ * Each rewrite falls back to the original URL (then to the GitHub Contents API
+ * for file reads) when the proxy fails, so a CDN hiccup never hard-fails VFS
+ * operations.
  */
 let githubFetchPatched = false;
+
+// GitHub Contents API URL for a raw file path (used as a second fallback for
+// file reads — more networks reach it than raw.githubusercontent.com).
+function githubContentsUrl(owner: string, repo: string, branch: string, path: string): string {
+    return `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(branch)}`;
+}
+
+function getRequestMethod(input: RequestInfo | URL, init?: RequestInit): string {
+    return (
+        init?.method ?? (input instanceof Request ? input.method : 'GET')
+    ).toUpperCase();
+}
+
+function getUrlString(input: RequestInfo | URL): string {
+    return typeof input === 'string'
+        ? input
+        : input instanceof URL
+            ? input.href
+            : (input as Request).url;
+}
 
 function installGitHubFetchRewrite(): void {
     if (githubFetchPatched || typeof window === 'undefined') return;
@@ -44,42 +69,85 @@ function installGitHubFetchRewrite(): void {
 
     const originalFetch = window.fetch.bind(window);
     window.fetch = async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
-        const urlStr =
-            typeof input === 'string'
-                ? input
-                : input instanceof URL
-                    ? input.href
-                    : (input as Request).url;
-        const match = urlStr.match(
-            /^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/
-        );
-        if (!match) return originalFetch(input, init);
-
-        const method = (
-            init?.method ?? (input instanceof Request ? input.method : 'GET')
-        ).toUpperCase();
+        const urlStr = getUrlString(input);
+        const method = getRequestMethod(input, init);
         if (method !== 'GET') return originalFetch(input, init);
 
-        const [, owner, repo, branch, path] = match;
-        const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(branch)}`;
-        const headers = new Headers(
-            init?.headers ?? (input instanceof Request ? input.headers : undefined)
+        // --- 1) Raw file reads: raw.githubusercontent.com -> jsDelivr CDN ---
+        const rawMatch = urlStr.match(
+            /^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/
         );
-        // `Accept` is a CORS-safelisted header, so no preflight is triggered.
-        headers.set('Accept', 'application/vnd.github.raw+json');
-
-        try {
-            const response = await originalFetch(apiUrl, { ...init, headers });
-            if (response.ok) return response;
-            console.warn(
-                `[github-rewrite] Contents API returned ${response.status}, falling back to raw URL`,
-                apiUrl
+        if (rawMatch) {
+            const [, owner, repo, branch, path] = rawMatch;
+            const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${owner}/${repo}@${encodeURIComponent(branch)}/${path}`;
+            try {
+                const response = await originalFetch(jsdelivrUrl, init);
+                if (response.ok) return response;
+                console.warn(
+                    `[github-rewrite] jsDelivr returned ${response.status}, trying Contents API`,
+                    jsdelivrUrl
+                );
+            } catch (err) {
+                console.warn('[github-rewrite] jsDelivr fetch failed, trying Contents API:', err);
+            }
+            // Fallback: GitHub Contents API with `Accept: application/vnd.github.raw+json`
+            // (`Accept` is CORS-safelisted, so no preflight).
+            const apiUrl = githubContentsUrl(owner, repo, branch, path);
+            const headers = new Headers(
+                init?.headers ?? (input instanceof Request ? input.headers : undefined)
             );
-            return originalFetch(input, init);
-        } catch (err) {
-            console.warn('[github-rewrite] Contents API fetch failed, falling back to raw URL:', err);
+            headers.set('Accept', 'application/vnd.github.raw+json');
+            try {
+                const response = await originalFetch(apiUrl, { ...init, headers });
+                if (response.ok) return response;
+                console.warn(
+                    `[github-rewrite] Contents API returned ${response.status}, falling back to raw URL`,
+                    apiUrl
+                );
+            } catch (err) {
+                console.warn('[github-rewrite] Contents API fetch failed, falling back to raw URL:', err);
+            }
             return originalFetch(input, init);
         }
+
+        // --- 2) Directory listing: api.github.com git/trees -> jsDelivr data API ---
+        const treeMatch = urlStr.match(
+            /^https:\/\/api\.github\.com\/repos\/([^/]+)\/([^/]+)\/git\/trees\/([^/?]+)/
+        );
+        if (treeMatch) {
+            const [, owner, repo, branch] = treeMatch;
+            const dataUrl = `https://data.jsdelivr.com/v1/packages/gh/${owner}/${repo}@${encodeURIComponent(branch)}?structure=flat`;
+            try {
+                const response = await originalFetch(dataUrl);
+                if (response.ok) {
+                    const json = await response.json();
+                    // jsDelivr flat listing: `files` entries carry the full
+                    // relative path in `name` and `type` of "file"/"directory".
+                    const tree = (json.files ?? []).map((f: any) => {
+                        const entry: Record<string, unknown> = {
+                            path: f.name,
+                            type: f.type === 'directory' ? 'tree' : 'blob',
+                        };
+                        if (typeof f.size === 'number') entry.size = f.size;
+                        return entry;
+                    });
+                    const body = JSON.stringify({ tree, truncated: false });
+                    return new Response(body, {
+                        status: 200,
+                        headers: { 'Content-Type': 'application/json' },
+                    });
+                }
+                console.warn(
+                    `[github-rewrite] jsDelivr data API returned ${response.status}, falling back to GitHub API`,
+                    dataUrl
+                );
+            } catch (err) {
+                console.warn('[github-rewrite] jsDelivr data API fetch failed, falling back to GitHub API:', err);
+            }
+            return originalFetch(input, init);
+        }
+
+        return originalFetch(input, init);
     };
 }
 
