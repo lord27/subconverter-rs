@@ -1,0 +1,100 @@
+- generic [active] [ref=f1e1]:
+  - alert [ref=f1e2]
+  - main [ref=f1e3]:
+    - generic [ref=f1e4]:
+      - generic [ref=f1e5]:
+        - generic [ref=f1e6]:
+          - img "Subconverter Logo" [ref=f1e8]
+          - generic [ref=f1e9]:
+            - paragraph [ref=f1e10]: subconverter
+            - paragraph [ref=f1e11]: rust · wasm · v0.2
+        - generic [ref=f1e12]:
+          - generic [ref=f1e13]:
+            - button "English" [ref=f1e14]
+            - button "中文" [ref=f1e15]
+          - link "在 GitHub 上点星星 点一下星星并点击部署即可一键免费部署私有转换服务！" [ref=f1e16] [cursor=pointer]:
+            - /url: https://github.com/lonelam/subconverter-rs
+            - generic [ref=f1e19]: 在 GitHub 上点星星
+            - generic [ref=f1e20]: 点一下星星并点击部署即可一键免费部署私有转换服务！
+      - generic [ref=f1e21]:
+        - paragraph [ref=f1e22]: subscription · convert · proxy rules
+        - heading "Subconverter-RS 网页界面" [level=1] [ref=f1e23]
+        - paragraph [ref=f1e24]: $ subconverter --input your_subscription --output clash ✓
+      - generic [ref=f1e25]:
+        - generic [ref=f1e26]:
+          - heading "< quick_convert />" [level=3] [ref=f1e27]
+          - generic [ref=f1e28]: wasm ready
+        - generic [ref=f1e29]:
+          - generic [ref=f1e30]:
+            - generic [ref=f1e31]: 订阅链接
+            - textbox "订阅链接" [ref=f1e32]:
+              - /placeholder: https://example.com/subscription
+          - generic [ref=f1e33]:
+            - generic [ref=f1e34]:
+              - generic [ref=f1e35]: 目标格式
+              - combobox "目标格式" [ref=f1e36]:
+                - option "clash" [selected]
+                - option "singbox"
+                - option "surge"
+                - option "quan"
+                - option "quanx"
+                - option "mellow"
+                - option "surfboard"
+                - option "loon"
+                - option "ss"
+                - option "ssr"
+                - option "sssub"
+                - option "v2ray"
+                - option "trojan"
+                - option "trojan-go"
+                - option "hysteria"
+                - option "hysteria2"
+                - option "ssd"
+                - option "mixed"
+                - option "clashr"
+            - generic [ref=f1e37]:
+              - generic [ref=f1e38]: 外部配置
+              - generic [ref=f1e39]:
+                - button "ACL4SSR" [ref=f1e40]
+                - button "ACL4SSR Full" [ref=f1e41]
+                - button "ACL4SSR Mini" [ref=f1e42]
+                - button "Divine China" [ref=f1e43]
+                - button "Loon Simple" [ref=f1e44]
+              - textbox "外部配置" [ref=f1e45]:
+                - /placeholder: External configuration URL or path
+          - generic [ref=f1e46]:
+            - generic [ref=f1e47] [cursor=pointer]:
+              - checkbox "生成永久订阅链接（请不要在非私有部署的服务器上保存, 否则可能导致订阅链接被盗用）" [checked] [ref=f1e48]
+              - text: 生成永久订阅链接（请不要在非私有部署的服务器上保存, 否则可能导致订阅链接被盗用）
+            - button "转换" [ref=f1e49]
+      - generic [ref=f1e50]:
+        - generic [ref=f1e51]:
+          - generic [ref=f1e52]: 01 / advanced
+          - heading "高级转换" [level=3] [ref=f1e57]
+          - paragraph [ref=f1e58]: 访问扩展选项，获取更复杂的配置参数和规则集自定义功能。
+          - link "高级选项" [ref=f1e59] [cursor=pointer]:
+            - /url: /convert/
+        - generic [ref=f1e60]:
+          - generic [ref=f1e61]: 02 / links
+          - heading "保存的订阅" [level=3] [ref=f1e65]
+          - paragraph [ref=f1e66]: 访问和管理您之前保存的订阅转换链接。
+          - link "管理订阅" [ref=f1e67] [cursor=pointer]:
+            - /url: /links/
+        - generic [ref=f1e68]:
+          - generic [ref=f1e69]: 03 / server
+          - heading "服务器配置" [level=3] [ref=f1e73]
+          - paragraph [ref=f1e74]: 配置服务器参数、规则集和代理行为设置
+          - link "管理配置" [ref=f1e75] [cursor=pointer]:
+            - /url: /settings/
+        - generic [ref=f1e76]:
+          - generic [ref=f1e77]: 04 / clients
+          - heading "客户端应用" [level=3] [ref=f1e81]
+          - paragraph [ref=f1e82]: 通过我们优化的代理下载客户端应用，提高下载速度。
+          - generic [ref=f1e83]:
+            - generic [ref=f1e84]: 正在获取可用下载项...
+            - link "查看所有下载" [ref=f1e85] [cursor=pointer]:
+              - /url: /downloads/
+      - generic [ref=f1e87]:
+        - generic [ref=f1e88]: uplink stable
+        - generic [ref=f1e89]: wasm://runtime · kv:local · tls13 ✓
+        - generic [ref=f1e90]: 由 Subconverter-RS 提供支持

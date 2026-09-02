@@ -1,33 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useClientLocale } from '@/components/ClientLocaleProvider';
 import { locales } from '@/i18n/config';
 
 export default function LanguageSwitcher() {
-    const router = useRouter();
-    const [currentLocale, setCurrentLocale] = useState<string>('en');
-
-    // Get current locale from cookie on component mount
-    useEffect(() => {
-        const storedLocale = document.cookie
-            .split('; ')
-            .find(row => row.startsWith('NEXT_LOCALE='))
-            ?.split('=')[1] || 'en';
-
-        setCurrentLocale(storedLocale);
-    }, []);
+    const { locale: currentLocale, setLocale } = useClientLocale();
 
     const handleLanguageChange = (newLocale: string) => {
-        // Set a cookie with the new locale
-        document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=${60 * 60 * 24 * 365}`;
-
-        // Update state
-        setCurrentLocale(newLocale);
-
-        // Reload the page to apply the new language
-        router.refresh();
+        setLocale(newLocale as (typeof locales)[number]);
     };
 
     // Language names in their native language - keep these hardcoded

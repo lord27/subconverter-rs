@@ -199,7 +199,7 @@ export default function ConvertPage() {
             } catch (err) {
                 console.error("Conversion API call failed:", err);
                 setError(err as ErrorData || {
-                    error: 'Failed to connect to the conversion API.',
+                    error: commonT('connectFailed'),
                     details: String(err)
                 });
             } finally {

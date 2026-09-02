@@ -42,6 +42,7 @@
         "optionalConfigInfo": "可选：选择预设或指定自定义配置链接",
         "githubStar": "在 GitHub 上点星星",
         "selfHostPrompt": "点一下星星并点击部署即可一键免费部署私有转换服务！",
+        "connectFailed": "无法连接到转换 API。",
         "reportIssuePrompt": "如果问题持续存在，请通过在 GitHub 上创建新 Issue 来报告：",
         "createIssueLinkText": "创建 Issue",
         "pasteErrorInfo": "请将上述错误信息粘贴到 Issue 描述中。"
@@ -227,6 +228,7 @@
         "back": "返回",
         "loading": "加载中...",
         "error": "错误",
+        "connectFailed": "无法连接到转换 API。",
         "success": "成功",
         "save": "保存",
         "cancel": "取消",

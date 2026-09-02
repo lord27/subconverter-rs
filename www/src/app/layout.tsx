@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { NextIntlClientProvider } from 'next-intl';
-import { getLocale, getMessages, getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import AppInitializer from "@/components/AppInitializer";
+import ClientLocaleProvider from "@/components/ClientLocaleProvider";
+import { defaultLocale, type Locale } from "@/i18n/config";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,11 +29,15 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const locale = await getLocale();
-  const messages = await getMessages();
+  const locale = (await getLocale()) as Locale;
+  // Server-side rendering can only ever be one fixed locale; normalize
+  // anything unexpected back to the configured default (zh).
+  const safeLocale: Locale = (['en', 'zh'] as const).includes(locale)
+    ? locale
+    : defaultLocale;
 
   return (
-    <html lang={locale}>
+    <html lang={safeLocale}>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
@@ -41,11 +46,11 @@ export default async function RootLayout({
           aria-hidden
           className="pointer-events-none fixed inset-x-0 top-0 z-50 h-px bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent"
         />
-        <NextIntlClientProvider locale={locale} messages={messages}>
+        <ClientLocaleProvider initialLocale={safeLocale}>
           <AppInitializer>
             {children}
           </AppInitializer>
-        </NextIntlClientProvider>
+        </ClientLocaleProvider>
       </body>
     </html>
   );
