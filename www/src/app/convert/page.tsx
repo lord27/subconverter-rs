@@ -181,6 +181,21 @@ export default function ConvertPage() {
             try {
                 const responseData = await convertSubscription(initial);
                 setResult(responseData);
+                // A landing link that carries a `filename` is meant to deliver
+                // a file (e.g. permanent short links / direct download links):
+                // trigger the download right away instead of only rendering the
+                // result on screen.
+                if (initial.filename && responseData.content) {
+                    const blob = new Blob([responseData.content], { type: responseData.content_type || 'text/plain' });
+                    const downloadUrl = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.download = initial.filename;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(downloadUrl);
+                }
             } catch (err) {
                 console.error("Conversion API call failed:", err);
                 setError(err as ErrorData || {

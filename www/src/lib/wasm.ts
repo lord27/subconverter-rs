@@ -16,7 +16,27 @@ export type { DirectoryEntry, FileAttributes };
 const isDebug = process.env.WASM_DEBUG === 'true';
 const deployEnv = process.env.DEPLOY_ENV || 'unknown';
 
-type SubconverterWasm = typeof subconverterWasm;
+/**
+ * Short-link methods accept the current request URL so links built from
+ * structured params can resolve against the active conversion endpoint.
+ * The `subconverter-wasm` npm package is a wasm-pack nodejs build whose .d.ts
+ * sometimes lags behind the Rust bindings (e.g. a one-argument
+ * `short_url_resolve`), which breaks `next build` type-checking. Intersecting
+ * `typeof subconverterWasm` with these explicit signatures keeps the rest of
+ * the API intact while letting the calls type-check against any package
+ * version — where a method exists in both, the intersection becomes an
+ * overload that accepts either arity.
+ */
+interface ShortUrlBindings {
+    short_url_resolve(id: string, request_url?: string | null): Promise<any>;
+    short_url_create(request_json: string, request_url?: string | null): Promise<any>;
+    short_url_move(id: string, new_id: string, request_url?: string | null): Promise<any>;
+    short_url_update(id: string, request_json: string): Promise<any>;
+    short_url_delete(id: string): Promise<any>;
+    short_url_list(): Promise<any>;
+}
+
+type SubconverterWasm = typeof subconverterWasm & ShortUrlBindings;
 
 // WASM module singleton to avoid re-initialization
 let wasmModule: SubconverterWasm | null = null;
