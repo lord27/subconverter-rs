@@ -253,11 +253,11 @@ export default function ConvertPage() {
     const isSubmitDisabled = !formData.target || !formData.url || isLoading;
 
     // Basic styling using Tailwind (assuming setup)
-    const inputClass = "mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm";
-    const checkboxClass = "h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500";
-    const labelClass = "block text-sm font-medium text-gray-700";
-    const fieldsetLegendClass = "text-lg font-semibold text-gray-900 mb-2";
-    const buttonClass = "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50";
+    const inputClass = "mt-1 block w-full px-3 py-2 bg-[#0a1526]/85 border border-white/10 rounded-md shadow-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/25 focus:border-cyan-400/60 sm:text-sm";
+    const checkboxClass = "h-4 w-4 text-cyan-400 border-white/20 rounded bg-[#0a1526] accent-cyan-400 focus:ring-cyan-400/30";
+    const labelClass = "block text-sm font-medium text-gray-300";
+    const fieldsetLegendClass = "text-lg font-semibold text-gray-100 mb-2";
+    const buttonClass = "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-500 hover:to-sky-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent focus:ring-cyan-400/40 disabled:opacity-50";
     const smallButtonClass = "px-3 py-1.5 text-xs rounded border transition-colors"; // For preset buttons
 
     // Add a helper component for field labels with reset button
@@ -276,7 +276,7 @@ export default function ConvertPage() {
                     {children}
                     {required && <span className="text-red-500 ml-1">*</span>}
                     {isSet && !required && (
-                        <span className="ml-2 text-xs font-normal text-green-600">
+                        <span className="ml-2 text-xs font-normal text-emerald-300">
                             ({t('fieldSet')})
                         </span>
                     )}
@@ -297,11 +297,11 @@ export default function ConvertPage() {
 
     // Update the input classes to show set vs. unset state
     const getInputClass = (fieldName: string) => {
-        const baseClass = "mt-1 block w-full px-3 py-2 bg-white border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm";
+        const baseClass = "mt-1 block w-full px-3 py-2 bg-[#0a1526]/85 border rounded-md shadow-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/25 focus:border-cyan-400/60 sm:text-sm";
         if (setFields.has(fieldName)) {
-            return `${baseClass} border-green-300`;
+            return `${baseClass} border-emerald-400/60`;
         }
-        return `${baseClass} border-gray-300`;
+        return `${baseClass} border-white/10`;
     };
 
     // Generate API URL from form data
@@ -375,7 +375,9 @@ export default function ConvertPage() {
     // Replace the placeholder return statement with the actual form UI
     return (
         <div className="container mx-auto p-4 max-w-4xl">
-            <h1 className="text-2xl font-bold mb-6">{t('title')}</h1>
+            <h1 className="neon-text mb-6 text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 to-sky-100">
+                {t('title')}
+            </h1>
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Required Section */}
@@ -430,8 +432,8 @@ export default function ConvertPage() {
                 </fieldset>
 
                 {/* Config Section */}
-                <fieldset className="p-4 border-2 rounded-md border-blue-300 bg-blue-50 shadow-sm">
-                    <legend className={`${fieldsetLegendClass} text-blue-800`}>{t('configSectionTitle')}</legend>
+                <fieldset className="p-4 border rounded-md border-cyan-400/25 bg-cyan-400/[0.04]">
+                    <legend className={`${fieldsetLegendClass} text-cyan-300`}>{t('configSectionTitle')}</legend>
                     <div className="grid grid-cols-1 gap-4">
                         <div>
                             <FieldLabel htmlFor="config" fieldName="config">{t('externalConfigLabel')}</FieldLabel>
@@ -443,7 +445,7 @@ export default function ConvertPage() {
                                             setFormData(prev => ({ ...prev, config: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online.ini' }));
                                             setSetFields(prev => new Set([...prev, 'config']));
                                         }}
-                                        className={`${smallButtonClass} bg-blue-100 hover:bg-blue-200 border-blue-300`}
+                                        className={`${smallButtonClass} bg-cyan-400/10 hover:bg-cyan-400/20 border-cyan-400/30 text-cyan-200`}
                                     >
                                         {t('configPresetACL4SSROnline')}
                                     </button>
@@ -453,7 +455,7 @@ export default function ConvertPage() {
                                             setFormData(prev => ({ ...prev, config: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online_Full.ini' }));
                                             setSetFields(prev => new Set([...prev, 'config']));
                                         }}
-                                        className={`${smallButtonClass} bg-blue-100 hover:bg-blue-200 border-blue-300`}
+                                        className={`${smallButtonClass} bg-cyan-400/10 hover:bg-cyan-400/20 border-cyan-400/30 text-cyan-200`}
                                     >
                                         {t('configPresetACL4SSROnlineFull')}
                                     </button>
@@ -463,7 +465,7 @@ export default function ConvertPage() {
                                             setFormData(prev => ({ ...prev, config: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online_Mini.ini' }));
                                             setSetFields(prev => new Set([...prev, 'config']));
                                         }}
-                                        className={`${smallButtonClass} bg-blue-100 hover:bg-blue-200 border-blue-300`}
+                                        className={`${smallButtonClass} bg-cyan-400/10 hover:bg-cyan-400/20 border-cyan-400/30 text-cyan-200`}
                                     >
                                         {t('configPresetACL4SSROnlineMini')}
                                     </button>
@@ -473,7 +475,7 @@ export default function ConvertPage() {
                                             setFormData(prev => ({ ...prev, config: 'https://raw.githubusercontent.com/DivineEngine/Profiles/master/Clash/config/China.yaml' }));
                                             setSetFields(prev => new Set([...prev, 'config']));
                                         }}
-                                        className={`${smallButtonClass} bg-blue-100 hover:bg-blue-200 border-blue-300`}
+                                        className={`${smallButtonClass} bg-cyan-400/10 hover:bg-cyan-400/20 border-cyan-400/30 text-cyan-200`}
                                     >
                                         {t('configPresetDivineEngine')}
                                     </button>
@@ -483,7 +485,7 @@ export default function ConvertPage() {
                                             setFormData(prev => ({ ...prev, config: 'https://gist.githubusercontent.com/tindy2013/1fa08640a9088ac8652dbd40c5d2715b/raw/loon_simple.conf' }));
                                             setSetFields(prev => new Set([...prev, 'config']));
                                         }}
-                                        className={`${smallButtonClass} bg-blue-100 hover:bg-blue-200 border-blue-300`}
+                                        className={`${smallButtonClass} bg-cyan-400/10 hover:bg-cyan-400/20 border-cyan-400/30 text-cyan-200`}
                                     >
                                         {t('configPresetLoonSimple')}
                                     </button>
@@ -497,7 +499,7 @@ export default function ConvertPage() {
                                     className={getInputClass("config")}
                                     placeholder={t('externalConfigPlaceholder')}
                                 />
-                                <p className="mt-1 text-xs text-gray-600">{t('externalConfigHelp')}</p>
+                                <p className="mt-1 text-xs text-gray-400">{t('externalConfigHelp')}</p>
                             </div>
                         </div>
                     </div>
@@ -962,39 +964,39 @@ export default function ConvertPage() {
                 {isLoading && !result && ( // Only show main loading if no result yet
                     <div className="text-center p-4">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto"></div>
-                        <p className="mt-2 text-sm text-gray-600">{t('processing')}</p>
+                        <p className="mt-2 text-sm text-gray-400">{t('processing')}</p>
                     </div>
                 )}
 
                 {error && (
-                    <div className="p-4 border border-red-400 bg-red-50 rounded-md">
-                        <h3 className="text-lg font-semibold text-red-800">{commonT('error')}</h3>
-                        <p className="text-red-700">{error.error}</p>
-                        {error.details && <p className="mt-1 text-sm text-red-600">{error.details}</p>}
+                    <div className="p-4 border border-red-400/50 bg-red-500/10 rounded-md">
+                        <h3 className="text-lg font-semibold text-red-300">{commonT('error')}</h3>
+                        <p className="text-red-200/90">{error.error}</p>
+                        {error.details && <p className="mt-1 text-sm text-red-300/80">{error.details}</p>}
                     </div>
                 )}
 
                 {result && !error && (
-                    <div className="p-4 border border-green-400 bg-green-50 rounded-md">
-                        <h3 className="text-lg font-semibold text-green-800">{t('resultTitle')}</h3>
-                        <p className="text-sm text-gray-600 mb-2">{t('contentTypeLabel')}: {result.content_type}</p>
+                    <div className="p-4 border border-emerald-400/40 bg-emerald-500/[0.07] rounded-md">
+                        <h3 className="text-lg font-semibold text-emerald-300">{t('resultTitle')}</h3>
+                        <p className="text-sm text-gray-400 mb-2">{t('contentTypeLabel')}: {result.content_type}</p>
 
                         {/* API URL Display */}
-                        <div className="mb-4 p-3 bg-white border border-gray-300 rounded-md">
+                        <div className="mb-4 p-3 bg-[#060e1c]/70 border border-white/10 rounded-md">
                             <div className="flex justify-between items-center mb-2">
-                                <h4 className="font-medium text-gray-800">{t('subscriptionUrlDisplay')}</h4>
+                                <h4 className="font-medium text-gray-200">{t('subscriptionUrlDisplay')}</h4>
                                 <button
                                     onClick={() => copyToClipboard(shortUrlData && shortUrlCreated ? shortUrlData.short_url : generateApiUrl())}
-                                    className="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded"
+                                    className="text-xs px-2 py-1 bg-cyan-400/10 border border-cyan-400/30 text-cyan-200 hover:bg-cyan-400/20 rounded"
                                 >
                                     {commonT('copy')}
                                 </button>
                             </div>
-                            <p className="text-xs break-all font-mono bg-gray-50 p-2 rounded border border-gray-200">
+                            <p className="text-xs break-all font-mono bg-[#04090f] p-2 rounded border border-white/10 text-cyan-100/80">
                                 {shortUrlData && shortUrlCreated ? shortUrlData.short_url : generateApiUrl()}
                             </p>
                             {shortUrlCreating && (
-                                <p className="text-xs text-blue-500 mt-1">{t('creatingShortUrl')}</p>
+                                <p className="text-xs text-cyan-300 mt-1">{t('creatingShortUrl')}</p>
                             )}
                             <p className="text-xs text-gray-500 mt-1">
                                 {t('useUrlMessage')}
@@ -1007,7 +1009,7 @@ export default function ConvertPage() {
                             readOnly
                             value={result.content}
                             rows={15}
-                            className="w-full p-2 border border-gray-300 rounded-md font-mono text-sm bg-gray-50"
+                            className="w-full p-2 border border-white/10 rounded-md font-mono text-sm bg-[#04090f] text-gray-200"
                             aria-label={t('conversionResultAriaLabel')}
                         />
                         <div className="mt-4 flex justify-end">

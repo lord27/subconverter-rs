@@ -182,135 +182,178 @@ export default function Home() {
     'ssd', 'mixed', 'clashr'
   ];
 
+  const inputClass =
+    "w-full rounded-lg border border-white/10 bg-[#0a1526]/85 px-4 py-2.5 text-sm text-gray-100 " +
+    "placeholder:text-gray-500 outline-none transition focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/20";
+  const chipClass = (active: boolean) =>
+    `px-3 py-1.5 text-xs rounded-md border transition-colors ${
+      active
+        ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-200"
+        : "border-white/10 bg-white/[0.04] text-gray-300 hover:border-cyan-400/40 hover:text-cyan-200"
+    }`;
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-4 md:p-8 lg:p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm">
-        <div className="flex flex-col sm:flex-row items-center justify-between mb-6">
-          <div className="flex items-center gap-4 mb-4 sm:mb-0">
-            <Image src="/logo.svg" alt="Subconverter Logo" width={60} height={60} />
-            <h1 className="text-4xl font-bold text-center">{t('title')}</h1>
+    <main className="relative flex min-h-screen flex-col items-center px-4 pb-20 pt-10 md:px-8">
+      <div className="z-10 w-full max-w-6xl">
+        {/* ======================= masthead ======================= */}
+        <header className="flex flex-wrap items-center justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <div className="grid h-12 w-12 place-items-center rounded-xl border border-cyan-400/25 bg-cyan-400/10 shadow-[0_0_26px_-6px_rgba(34,211,238,0.65)]">
+              <Image
+                src="/logo.svg"
+                alt="Subconverter Logo"
+                width={30}
+                height={30}
+                className="drop-shadow-[0_0_8px_rgba(34,211,238,0.9)]"
+              />
+            </div>
+            <div>
+              <p className="font-mono text-[10px] uppercase tracking-[0.32em] text-cyan-300/90">
+                subconverter
+              </p>
+              <p className="font-mono text-[10px] tracking-[0.18em] text-gray-500">
+                rust · wasm · v0.2
+              </p>
+            </div>
           </div>
-          <div className="flex gap-4 items-center">
+
+          <div className="flex flex-wrap items-center gap-3">
             <LanguageSwitcher />
             <a
               href="https://github.com/lonelam/subconverter-rs"
               target="_blank"
               rel="noopener noreferrer"
-              className="group bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg transition-all duration-300 ease-in-out shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex flex-col items-center text-center w-50"
+              className="group flex items-center gap-2.5 rounded-lg border border-white/10 bg-white/[0.04] px-4 py-2 text-sm transition-colors hover:border-cyan-400/50 hover:bg-cyan-400/10"
             >
-              <div className="flex items-center gap-2 mb-1">
-                <svg className="w-5 h-5 group-hover:scale-110 transition-transform" height="24" width="24" viewBox="0 0 16 16" fill="currentColor">
-                  <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
-                </svg>
-                <span className="font-semibold">{t('githubStar')}</span>
-              </div>
-              <p className="text-xs text-indigo-100 group-hover:text-white transition-colors">
+              <svg className="h-4 w-4 text-gray-300 transition-colors group-hover:text-cyan-200" height="24" width="24" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
+              </svg>
+              <span className="font-medium text-gray-200 group-hover:text-white">{t('githubStar')}</span>
+              <span className="hidden text-xs text-gray-500 transition-colors sm:inline group-hover:text-cyan-200/80">
                 {t('selfHostPrompt')}
-              </p>
+              </span>
             </a>
           </div>
-        </div>
+        </header>
 
-        <div className="bg-white/5 p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-2xl font-semibold mb-4">{t('quickConvert')}</h2>
-          <form className="space-y-4" onSubmit={handleSubmit}>
+        {/* ======================= hero ======================= */}
+        <section className="mt-12 max-w-3xl">
+          <p className="term-cursor font-mono text-xs tracking-[0.22em] text-cyan-300/90">
+            subscription · convert · proxy rules
+          </p>
+          <h1 className="neon-text mt-6 bg-gradient-to-r from-cyan-200 via-sky-100 to-slate-200 bg-clip-text text-5xl font-extrabold tracking-tight text-transparent sm:text-6xl">
+            {t('title')}
+          </h1>
+          <p className="mt-6 font-mono text-sm text-gray-500">
+            $ subconverter --input your_subscription --output {targetFormat} ✓
+          </p>
+        </section>
+
+        {/* ======================= quick convert ======================= */}
+        <section className="panel mt-12 rounded-2xl p-6 md:p-8">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <h3 className="font-mono text-xs uppercase tracking-[0.26em] text-cyan-300/90">
+              &lt; quick_convert /&gt;
+            </h3>
+            <span className="status-dot font-mono text-xs text-emerald-300/90">
+              wasm ready
+            </span>
+          </div>
+
+          <form className="space-y-5" onSubmit={handleSubmit}>
             <div>
-              <label htmlFor="subscriptionUrl" className="block text-sm font-medium mb-1">
+              <label htmlFor="subscriptionUrl" className="mb-1.5 block text-sm font-medium text-gray-300">
                 {t('subscriptionUrl')}
               </label>
               <input
                 type="url"
                 id="subscriptionUrl"
                 placeholder="https://example.com/subscription"
-                className="w-full p-2 border border-gray-300 rounded bg-white/10"
+                className={inputClass}
                 value={subscriptionUrl}
                 onChange={(e) => setSubscriptionUrl(e.target.value)}
                 required
               />
             </div>
 
-            <div>
-              <label htmlFor="targetFormat" className="block text-sm font-medium mb-1">
-                {t('targetFormat')}
-              </label>
-              <select
-                id="targetFormat"
-                className="w-full p-2 border border-gray-300 rounded bg-white/10"
-                value={targetFormat}
-                onChange={(e) => setTargetFormat(e.target.value)}
-              >
-                {SUPPORTED_TARGETS.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-
-            <div>
-              <label htmlFor="configUrl" className="block text-sm font-medium mb-1">
-                {t('externalConfig')}
-              </label>
-              <div className="flex flex-wrap gap-2 mb-2">
-                {CONFIG_PRESETS.map(preset => (
-                  <button
-                    key={preset.name}
-                    type="button"
-                    onClick={() => setConfigUrl(preset.url)}
-                    className={`px-3 py-1.5 text-xs rounded border transition-colors ${configUrl === preset.url
-                      ? 'bg-blue-500 text-white border-blue-600'
-                      : 'bg-blue-100 hover:bg-blue-200 border-blue-300 text-blue-800'
-                      }`}
-                    title={preset.description}
-                  >
-                    {preset.name}
-                  </button>
-                ))}
+            <div className="grid gap-5 sm:grid-cols-2">
+              <div>
+                <label htmlFor="targetFormat" className="mb-1.5 block text-sm font-medium text-gray-300">
+                  {t('targetFormat')}
+                </label>
+                <select
+                  id="targetFormat"
+                  className={inputClass}
+                  value={targetFormat}
+                  onChange={(e) => setTargetFormat(e.target.value)}
+                >
+                  {SUPPORTED_TARGETS.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
               </div>
-              <input
-                type="text"
-                id="configUrl"
-                placeholder="External configuration URL or path"
-                className="w-full p-2 border border-gray-300 rounded bg-white/10"
-                value={configUrl}
-                onChange={(e) => setConfigUrl(e.target.value)}
-              />
-              <p className="mt-1 text-xs text-gray-400">
-                {t('optionalConfigInfo')}
-              </p>
+
+              <div>
+                <label htmlFor="configUrl" className="mb-1.5 block text-sm font-medium text-gray-300">
+                  {t('externalConfig')}
+                </label>
+                <div className="mb-2 flex flex-wrap gap-2">
+                  {CONFIG_PRESETS.map(preset => (
+                    <button
+                      key={preset.name}
+                      type="button"
+                      onClick={() => setConfigUrl(preset.url)}
+                      className={chipClass(configUrl === preset.url)}
+                      title={preset.description}
+                    >
+                      {preset.name}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  id="configUrl"
+                  placeholder="External configuration URL or path"
+                  className={inputClass}
+                  value={configUrl}
+                  onChange={(e) => setConfigUrl(e.target.value)}
+                />
+              </div>
             </div>
 
-            <div className="flex items-center">
-              <input
-                id="saveApiUrl"
-                type="checkbox"
-                checked={saveApiUrl}
-                onChange={(e) => setSaveApiUrl(e.target.checked)}
-                className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
-              />
-              <label htmlFor="saveApiUrl" className="ml-2 text-sm">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+              <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-300">
+                <input
+                  id="saveApiUrl"
+                  type="checkbox"
+                  checked={saveApiUrl}
+                  onChange={(e) => setSaveApiUrl(e.target.checked)}
+                  className="h-4 w-4 rounded border-white/20 bg-[#0a1526] accent-cyan-400 focus:ring-cyan-400/30"
+                />
                 {t('saveAsSubscription')}
               </label>
-            </div>
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded disabled:opacity-50"
-            >
-              {isLoading ? t('converting') : t('convert')}
-            </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="btn-glow ml-auto w-full bg-gradient-to-r from-cyan-500 to-sky-500 px-6 py-3 font-bold text-[#02151d] transition hover:from-cyan-400 hover:to-sky-400 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              >
+                {isLoading ? t('converting') : t('convert')}
+              </button>
+            </div>
           </form>
 
           {error && (
-            <div className="mt-6 p-4 border border-red-400 bg-red-50 rounded-md">
-              <h3 className="text-lg font-semibold text-red-800">{t('error')}</h3>
-              <p className="text-red-700">{error.error}</p>
-              {error.details && <p className="mt-1 text-sm text-red-600">{error.details}</p>}
-              <p className="mt-2 text-sm text-gray-700">
+            <div className="mt-6 rounded-xl border border-red-400/40 bg-red-500/10 p-4">
+              <h4 className="text-lg font-semibold text-red-300">{t('error')}</h4>
+              <p className="text-red-200/90">{error.error}</p>
+              {error.details && <p className="mt-1 text-sm text-red-300/80">{error.details}</p>}
+              <p className="mt-2 text-sm text-gray-400">
                 {t('reportIssuePrompt')}
                 {' '}
                 <a
                   href="https://github.com/lonelam/subconverter-rs/issues/new/choose"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-blue-600 hover:underline"
+                  className="text-cyan-300 underline-offset-2 hover:underline"
                 >
                   {t('createIssueLinkText')}
                 </a>
@@ -320,50 +363,44 @@ export default function Home() {
           )}
 
           {result && !error && (
-            <div className="mt-6">
+            <div className="mt-6 space-y-4">
               {/* API URL Display */}
-              <div className="mb-4 p-3 bg-white/10 border border-gray-300 rounded-md">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-medium">{t('subscriptionUrlDisplay')}</h4>
+              <div className="rounded-xl border border-white/10 bg-[#060e1c]/70 p-4">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <h4 className="text-sm font-medium text-gray-200">{t('subscriptionUrlDisplay')}</h4>
                   <button
                     onClick={() => copyToClipboard(shortUrlData && shortUrlCreated ? shortUrlData.short_url : generateApiUrl())}
-                    className="text-xs px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded"
+                    className="rounded-md border border-cyan-400/40 bg-cyan-400/10 px-2.5 py-1 text-xs text-cyan-200 transition hover:bg-cyan-400/20"
                   >
                     {t('copy')}
                   </button>
                 </div>
-                <p className="text-xs break-all font-mono bg-gray-800 p-2 rounded text-white">
+                <p className="break-all rounded-lg bg-[#04090f] p-2.5 font-mono text-xs text-cyan-100/90">
                   {shortUrlData && shortUrlCreated ? shortUrlData.short_url : generateApiUrl()}
                 </p>
-                <p className="text-xs mt-1">
-                  <span className="text-gray-400">
-                    {t('useUrlMessage')}
-                  </span>
-                  <span className="text-gray-400">
-                    {saveApiUrl && !shortUrlCreated && t('urlWillBeSaved')}
-                  </span>
-                  <span className="text-gray-400">
-                    {shortUrlCreated && t('shortUrlMessage')}
-                  </span>
+                <p className="mt-2 text-xs text-gray-500">
+                  {t('useUrlMessage')}
+                  {saveApiUrl && !shortUrlCreated && t('urlWillBeSaved')}
+                  {shortUrlCreated && t('shortUrlMessage')}
                 </p>
               </div>
 
               {/* Result preview */}
-              <div className="mt-4">
-                <div className="flex justify-between items-center mb-2">
-                  <h4 className="font-medium">{t('previewTitle')}</h4>
-                  <div className="text-xs text-gray-400">Content-Type: {result.content_type}</div>
+              <div>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <h4 className="text-sm font-medium text-gray-200">{t('previewTitle')}</h4>
+                  <div className="font-mono text-xs text-gray-500">Content-Type: {result.content_type}</div>
                 </div>
                 <textarea
                   readOnly
                   value={result.content}
                   rows={8}
-                  className="w-full p-2 bg-gray-800 rounded font-mono text-sm text-white"
+                  className="w-full rounded-xl border border-white/10 bg-[#04090f] p-3 font-mono text-sm text-gray-200 focus:outline-none"
                 />
                 <div className="mt-2 flex justify-end">
                   <button
                     onClick={handleDownload}
-                    className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                    className="rounded-lg bg-emerald-500 px-5 py-2 font-semibold text-[#02241b] transition hover:bg-emerald-400"
                   >
                     {t('downloadConfig')}
                   </button>
@@ -371,105 +408,128 @@ export default function Home() {
               </div>
             </div>
           )}
-        </div>
+        </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white/5 p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold mb-4">{t('advancedConvert')}</h2>
-            <p className="mb-4">
-              {t('advancedDescription')}
-            </p>
+        {/* ======================= feature grid ======================= */}
+        <section className="mt-10 grid grid-cols-1 gap-5 md:grid-cols-2">
+          {/* Advanced convert */}
+          <div className="panel panel-interactive rounded-2xl p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="font-mono text-xs text-cyan-400/80">01 / advanced</span>
+              <svg className="h-5 w-5 text-cyan-300/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-100">{t('advancedConvert')}</h3>
+            <p className="mb-5 mt-2 text-sm leading-relaxed text-gray-400">{t('advancedDescription')}</p>
             <Link
               href="/convert"
-              className="block bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded text-center"
+              className="block rounded-lg bg-gradient-to-r from-cyan-600 to-sky-600 px-4 py-2.5 text-center font-semibold text-white transition hover:from-cyan-500 hover:to-sky-500"
             >
               {t('advancedOptions')}
             </Link>
           </div>
 
-          <div className={`bg-white/5 p-6 rounded-lg shadow-md ${result && (saveApiUrl || shortUrlCreated) ? 'border-2 border-green-500 bg-white/10' : ''}`}>
-            <h2 className="text-2xl font-semibold mb-4">{t('mySavedLinks')}</h2>
-            <p className="mb-4">
+          {/* My saved links */}
+          <div className={`panel panel-interactive rounded-2xl p-6 ${result && (saveApiUrl || shortUrlCreated) ? 'border-emerald-400/50' : ''}`}>
+            <div className="mb-4 flex items-center justify-between">
+              <span className="font-mono text-xs text-cyan-400/80">02 / links</span>
+              <svg className="h-5 w-5 text-cyan-300/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-100">{t('mySavedLinks')}</h3>
+            <p className="mb-5 mt-2 text-sm leading-relaxed text-gray-400">
               {t('savedLinksDescription')}
               {shortUrlCreating && (
-                <span className="block mt-2 text-blue-400 text-sm">
-                  {t('creatingShortUrl')}
-                </span>
+                <span className="mt-2 block text-sm text-cyan-300">{t('creatingShortUrl')}</span>
               )}
               {shortUrlCreated && (
-                <span className="block mt-2 text-green-400 text-sm">
-                  {t('shortUrlCreated')}
-                </span>
+                <span className="mt-2 block text-sm text-emerald-300">{t('shortUrlCreated')}</span>
               )}
             </p>
             <Link
               href="/links"
-              className={`block ${result && (saveApiUrl || shortUrlCreated) ? 'bg-green-500' : 'bg-green-600'} hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-center ${result && (saveApiUrl || shortUrlCreated) ? 'animate-pulse' : ''}`}
+              className={`block rounded-lg px-4 py-2.5 text-center font-semibold transition ${
+                result && (saveApiUrl || shortUrlCreated)
+                  ? 'bg-emerald-500 text-[#02241b] hover:bg-emerald-400'
+                  : 'bg-emerald-600 text-white hover:bg-emerald-500'
+              }`}
             >
               {t('manageLinks')}
             </Link>
           </div>
 
-          <div className="bg-white/5 p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold mb-4">{t('serverSettings')}</h2>
-            <div className="flex items-center mb-4">
-              <svg className="w-6 h-6 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          {/* Server settings */}
+          <div className="panel panel-interactive rounded-2xl p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="font-mono text-xs text-cyan-400/80">03 / server</span>
+              <svg className="h-5 w-5 text-cyan-300/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 00-2 2v4a2 2 0 002 2h14a2 2 0 002-2v-4a2 2 0 00-2-2m-2-4h.01M17 16h.01" />
               </svg>
-              <p>{t('serverSettingsDescription')}</p>
             </div>
+            <h3 className="text-lg font-semibold text-gray-100">{t('serverSettings')}</h3>
+            <p className="mb-5 mt-2 text-sm leading-relaxed text-gray-400">{t('serverSettingsDescription')}</p>
             <Link
               href="/settings"
-              className="block bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-center"
+              className="block rounded-lg bg-gradient-to-r from-sky-600 to-blue-600 px-4 py-2.5 text-center font-semibold text-white transition hover:from-sky-500 hover:to-blue-500"
             >
               {t('manageSettings')}
             </Link>
           </div>
 
-          <div className="bg-white/5 p-6 rounded-lg shadow-md">
-            <h2 className="text-2xl font-semibold mb-4">{t('appDownloads')}</h2>
-            <p className="mb-4">
-              {t('appDownloadsDescription')}
-            </p>
+          {/* App downloads */}
+          <div className="panel panel-interactive rounded-2xl p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="font-mono text-xs text-cyan-400/80">04 / clients</span>
+              <svg className="h-5 w-5 text-cyan-300/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.6" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-100">{t('appDownloads')}</h3>
+            <p className="mb-5 mt-2 text-sm leading-relaxed text-gray-400">{t('appDownloadsDescription')}</p>
             <div className="flex gap-3">
               {userOs !== "unknown" && (
                 downloadLoading ? (
-                  <div className="flex-1 py-3 text-center">{t('loadingDownloads')}</div>
+                  <div className="flex-1 py-3 text-center text-sm text-gray-500">{t('loadingDownloads')}</div>
                 ) : (
                   downloads.find(d => d.platform === userOs) ? (
                     <a
                       href={downloads.find(d => d.platform === userOs)?.download_url}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded text-center flex items-center justify-center"
+                      className="flex flex-1 items-center justify-center rounded-lg bg-emerald-600 px-4 py-2.5 font-semibold text-white transition hover:bg-emerald-500"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                      <svg className="mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                       </svg>
                       {t('downloadFor', { os: userOs.charAt(0).toUpperCase() + userOs.slice(1) })}
                     </a>
                   ) : (
-                    <div className="flex-1 py-3 text-center">{t('noDownloadAvailable', { os: userOs })}</div>
+                    <div className="flex-1 py-3 text-center text-sm text-gray-500">{t('noDownloadAvailable', { os: userOs })}</div>
                   )
                 )
               )}
               <Link
                 href="/downloads"
-                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded text-center"
+                className="flex-1 rounded-lg bg-gradient-to-r from-sky-600 to-blue-600 px-4 py-2.5 text-center font-semibold text-white transition hover:from-sky-500 hover:to-blue-500"
               >
                 {t('allDownloads')}
               </Link>
             </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      <footer className="w-full text-center mt-16 text-sm text-gray-400">
-        <p>
-          {t('footer')}
-        </p>
-      </footer>
+        {/* ======================= status rail ======================= */}
+        <footer className="mt-14">
+          <div className="panel flex flex-wrap items-center justify-between gap-3 rounded-xl px-5 py-3.5 font-mono text-xs text-gray-400">
+            <span className="status-dot text-emerald-300/90">uplink stable</span>
+            <span className="hidden text-gray-500 sm:inline">wasm://runtime · kv:local · tls13 ✓</span>
+            <span>{t('footer')}</span>
+          </div>
+        </footer>
+      </div>
     </main>
   );
 }

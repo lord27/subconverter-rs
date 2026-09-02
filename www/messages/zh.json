@@ -154,9 +154,13 @@
         },
         "server": {
             "title": "服务器设置",
+            "description": "HTTP 服务监听选项。修改后需重启后端进程方可生效。",
             "listen": "监听地址",
+            "listenHelp": "监听的 IP 地址，例如 0.0.0.0（所有网卡）或 127.0.0.1（仅本机）",
             "port": "端口号",
-            "serveFileRoot": "文件服务目录"
+            "portHelp": "HTTP 服务端口，默认 25500",
+            "serveFileRoot": "静态文件服务目录",
+            "serveFileRootHelp": "静态文件服务的根目录，留空则使用默认目录"
         },
         "advanced": {
             "title": "高级设置",
@@ -175,7 +179,13 @@
             },
             "scriptCleanContext": "脚本清理上下文",
             "asyncFetchRuleset": "异步获取规则集",
-            "skipFailedLinks": "跳过失败链接"
+            "skipFailedLinks": "跳过失败链接",
+            "levels": {
+                "debug": "调试",
+                "info": "信息",
+                "warning": "警告",
+                "error": "错误"
+            }
         },
         "nodePref": {
             "title": "节点偏好",
@@ -204,7 +214,8 @@
             "rulesDescription": "定义基于匹配模式向节点名称添加表情符号的规则。",
             "addRule": "添加规则",
             "match": "匹配模式",
-            "emoji": "表情符号"
+            "emoji": "表情符号",
+            "emojiFileHint": "表情符号规则默认在 snippets/emoji.txt 中定义，可直接编辑该文件。"
         },
         "snippets": {
             "title": "代码片段",

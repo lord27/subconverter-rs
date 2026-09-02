@@ -152,9 +152,13 @@
         },
         "server": {
             "title": "Server Settings",
+            "description": "HTTP service listening options. A backend restart is required for changes to take effect.",
             "listen": "Listen Address",
+            "listenHelp": "IP address to listen on, e.g. 0.0.0.0 (all interfaces) or 127.0.0.1 (local only)",
             "port": "Port Number",
-            "serveFileRoot": "Serve Files Directory"
+            "portHelp": "HTTP service port, default 25500",
+            "serveFileRoot": "Static File Serve Root",
+            "serveFileRootHelp": "Root directory for static file serving; leave empty to use the default"
         },
         "advanced": {
             "title": "Advanced Settings",
@@ -173,7 +177,13 @@
             },
             "scriptCleanContext": "Script Clean Context",
             "asyncFetchRuleset": "Async Fetch Ruleset",
-            "skipFailedLinks": "Skip Failed Links"
+            "skipFailedLinks": "Skip Failed Links",
+            "levels": {
+                "debug": "Debug",
+                "info": "Info",
+                "warning": "Warning",
+                "error": "Error"
+            }
         },
         "nodePref": {
             "title": "Node Preferences",
@@ -202,12 +212,19 @@
             "rulesDescription": "Define rules to add emojis to node names based on matching patterns.",
             "addRule": "Add Rule",
             "match": "Match Pattern",
-            "emoji": "Emoji"
+            "emoji": "Emoji",
+            "emojiFileHint": "Emoji rules are defined in snippets/emoji.txt by default. You can edit that file directly."
         },
         "snippets": {
             "title": "Snippets",
             "emojiFileDesc": "Edit the default emoji rules file.",
             "gistConfDesc": "Edit the Gist configuration file (if applicable)."
+        },
+        "notSet": "Not Set",
+        "defaultTabMessage": "Select a section to edit settings.",
+        "yamlPreview": {
+            "title": "YAML Preview (Read-only)",
+            "note": "This is a preview of the {file} file based on your current settings. Changes here won't be saved directly; use the form above."
         }
     },
     "Common": {

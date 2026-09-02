@@ -45,21 +45,23 @@ export default function StartupPage() {
     }, [router]); // Removed t from dependencies as it might cause loops if translations change
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
-            <div className="p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md text-center">
-                <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">{t('title')}</h1>
-                <p className="text-gray-700 dark:text-gray-300 mb-4">
-                    {t('description')}
+        <div className="flex min-h-screen flex-col items-center justify-center px-4">
+            <div className="panel w-full max-w-md rounded-2xl p-8 text-center">
+                <p className="term-cursor justify-center font-mono text-xs uppercase tracking-[0.28em] text-cyan-300/90">
+                    subconverter · bootstrap
                 </p>
-                <div className="mt-4">
-                    <p className="text-lg font-medium text-gray-900 dark:text-gray-100">{status}</p>
+                <h1 className="mt-6 text-2xl font-bold text-gray-100">{t('title')}</h1>
+                <p className="mt-3 text-sm text-gray-400">{t('description')}</p>
+                <div className="mt-6">
+                    <p className="font-mono text-sm text-gray-200">{status}</p>
                     {error && (
-                        <p className="mt-2 text-sm text-red-600 dark:text-red-400">Error: {error}</p>
+                        <p className="mt-2 font-mono text-sm text-red-300">
+                            <span className="text-red-400">!</span> {error}
+                        </p>
                     )}
                 </div>
-                {/* Optional: Add a spinner */}
                 {status === t('status_initializing') && (
-                    <div className="mt-4 animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                    <div className="mx-auto mt-6 h-8 w-8 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent shadow-[0_0_18px_rgba(34,211,238,0.35)]"></div>
                 )}
             </div>
         </div>

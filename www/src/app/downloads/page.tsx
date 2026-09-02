@@ -59,7 +59,7 @@ export default function DownloadsPage() {
                         <div className="text-xl">{t('loading')}</div>
                     </div>
                 ) : error ? (
-                    <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6">
+                    <div className="border-l-4 border-red-400/70 bg-red-500/10 p-4 text-red-200/90 mb-6">
                         <p>{error}</p>
                     </div>
                 ) : (
@@ -88,7 +88,7 @@ export default function DownloadsPage() {
                                                 <h3 className="font-medium text-lg mb-1">
                                                     {download.platform.charAt(0).toUpperCase() + download.platform.slice(1)}
                                                     {userOS === download.platform && (
-                                                        <span className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
+                                                        <span className="ml-2 bg-emerald-400/15 text-emerald-300 border border-emerald-400/30 text-xs px-2 py-1 rounded">
                                                             {t('recommended')}
                                                         </span>
                                                     )}

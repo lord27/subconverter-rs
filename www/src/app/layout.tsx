@@ -36,6 +36,11 @@ export default async function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* top cyan hairline — site accent rail */}
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-x-0 top-0 z-50 h-px bg-gradient-to-r from-transparent via-cyan-400/70 to-transparent"
+        />
         <NextIntlClientProvider locale={locale} messages={messages}>
           <AppInitializer>
             {children}

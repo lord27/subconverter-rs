@@ -101,8 +101,11 @@ export default function NotFound() {
             <div className="max-w-md w-full text-center">
                 {status === 'checking' && (
                     <>
-                        <div className="mx-auto mb-6 h-10 w-10 animate-spin rounded-full border-4 border-blue-500 border-t-transparent" />
-                        <h1 className="text-xl font-semibold text-gray-200">
+                        <div className="mx-auto mb-6 h-10 w-10 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent shadow-[0_0_18px_rgba(34,211,238,0.35)]" />
+                        <p className="term-cursor justify-center font-mono text-xs uppercase tracking-[0.3em] text-cyan-300/90">
+                            resolving link
+                        </p>
+                        <h1 className="mt-4 text-xl font-semibold text-gray-200">
                             Checking short link...
                         </h1>
                     </>
@@ -110,8 +113,11 @@ export default function NotFound() {
 
                 {status === 'redirecting' && (
                     <>
-                        <div className="mx-auto mb-6 h-10 w-10 animate-spin rounded-full border-4 border-green-500 border-t-transparent" />
-                        <h1 className="text-xl font-semibold text-gray-200">
+                        <div className="mx-auto mb-6 h-10 w-10 animate-spin rounded-full border-2 border-emerald-400 border-t-transparent shadow-[0_0_18px_rgba(52,211,153,0.35)]" />
+                        <p className="term-cursor justify-center font-mono text-xs uppercase tracking-[0.3em] text-emerald-300/90">
+                            link found
+                        </p>
+                        <h1 className="mt-4 text-xl font-semibold text-gray-200">
                             Redirecting...
                         </h1>
                         <p className="mt-2 text-sm text-gray-400">
@@ -122,7 +128,10 @@ export default function NotFound() {
 
                 {status === 'invalid' && (
                     <>
-                        <h1 className="text-6xl font-bold text-gray-500">404</h1>
+                        <p className="font-mono text-7xl font-extrabold leading-none tracking-tight text-transparent">
+                            <span className="neon-text bg-gradient-to-r from-cyan-300 to-sky-500 bg-clip-text">404</span>
+                        </p>
+                        <div className="divider-line mx-auto mt-6 w-24" />
                         <p className="mt-4 text-lg font-semibold text-gray-200">
                             Page not found
                         </p>
@@ -131,13 +140,13 @@ export default function NotFound() {
                             another browser, it may only be available there.
                         </p>
                         {errorDetail && (
-                            <p className="mt-3 break-all rounded bg-white/5 px-3 py-2 text-xs text-gray-500">
+                            <p className="mt-3 break-all rounded border border-white/10 bg-[#060e1c]/80 px-3 py-2 font-mono text-xs text-gray-400">
                                 {errorDetail}
                             </p>
                         )}
                         <Link
                             href="/"
-                            className="mt-6 inline-block rounded bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                            className="btn-glow mt-7 inline-block rounded-lg bg-gradient-to-r from-cyan-600 to-sky-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:from-cyan-500 hover:to-sky-500"
                         >
                             Go to Home
                         </Link>
