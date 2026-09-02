@@ -28,13 +28,18 @@ function isBrowser(): boolean {
  * Rewrites GitHub-hosted GET requests made by the WASM VFS so they work from a
  * browser in pure static export:
  *
- *  1. `raw.githubusercontent.com/{owner}/{repo}/{branch}/{path}` (file reads)
- *     -> `cdn.jsdelivr.net/gh/{owner}/{repo}@{branch}/{path}`. jsDelivr has no
+ *  1. `raw.githubusercontent.com/{owner}/{repo}/{branch}/base/{path}` (file
+ *     reads of the rule library) -> same-origin `/base/{path}` first (static
+ *     export ships a copy of the repo's `base/`), falling back to
+ *     `cdn.jsdelivr.net/gh/{owner}/{repo}@{branch}/{path}`. jsDelivr has no
  *     unauthenticated rate limit and sends CORS headers, unlike GitHub's raw /
  *     Contents API which quickly 403s an anonymous browser session.
  *  2. `api.github.com/repos/{owner}/{repo}/git/trees/{branch}?recursive=1`
  *     (directory listing used by `initialize_subconverter_webapp`)
- *     -> `data.jsdelivr.com/v1/packages/gh/{owner}/{repo}@{branch}?structure=flat`,
+ *     -> same-origin `/base/_tree.json` first (a git/trees-shaped index of the
+ *     in-repo library generated at build time; the GitHub API truncates this
+ *     repo and jsDelivr's flat listing is capped for large repos), falling back
+ *     to `data.jsdelivr.com/v1/packages/gh/{owner}/{repo}@{branch}?structure=flat`,
  *     converted back into the GitHub `git/trees` JSON shape the WASM expects.
  *
  * Each rewrite falls back to the original URL (then to the GitHub Contents API
@@ -42,6 +47,49 @@ function isBrowser(): boolean {
  * operations.
  */
 let githubFetchPatched = false;
+
+/**
+ * Purges a poisoned GitHub tree cache entry left behind by the old
+ * jsDelivr-based directory loader. jsDelivr's flat listing is *capped* for
+ * this repository and returns no `base/` files at all, yet the 200 response is
+ * cached in KV for the whole 15-minute TTL — a stale entry keeps startup
+ * stuck at "Found 0 files". A tree response without a single `"base/` path can
+ * never be valid for `root_path = "base"`, so such entries are safe to drop.
+ */
+function purgeStaleGitHubTreeCache(): void {
+    try {
+        if (typeof localStorage === 'undefined') return;
+        const PREFIX = 'subconverter_kv_v1_';
+        for (let i = 0; i < localStorage.length; i++) {
+            const lsKey = localStorage.key(i);
+            if (!lsKey || !lsKey.startsWith(PREFIX)) continue;
+            if (!lsKey.includes('@@github_tree_cache')) continue;
+            if (!lsKey.includes('lonelam/subconverter-rs')) continue;
+            try {
+                const raw = localStorage.getItem(lsKey);
+                if (!raw) continue;
+                const parsed = JSON.parse(raw);
+                const data =
+                    parsed &&
+                    typeof parsed === 'object' &&
+                    '__t' in parsed &&
+                    parsed.__t === 'j' &&
+                    parsed.d &&
+                    typeof parsed.d.data === 'string'
+                        ? parsed.d.data
+                        : '';
+                if (!data.includes('"base/')) {
+                    localStorage.removeItem(lsKey);
+                    console.warn(`[github-rewrite] Purged stale GitHub tree cache: ${lsKey}`);
+                }
+            } catch {
+                /* leave unparsable entries untouched */
+            }
+        }
+    } catch {
+        /* localStorage unavailable — ignore */
+    }
+}
 
 // GitHub Contents API URL for a raw file path (used as a second fallback for
 // file reads — more networks reach it than raw.githubusercontent.com).
@@ -65,6 +113,9 @@ function getUrlString(input: RequestInfo | URL): string {
 
 function installGitHubFetchRewrite(): void {
     if (githubFetchPatched || typeof window === 'undefined') return;
+    // Drop any stale tree cache from the old loader *before* the WASM VFS
+    // consults it, otherwise startup would keep failing for the whole TTL.
+    purgeStaleGitHubTreeCache();
     githubFetchPatched = true;
 
     const originalFetch = window.fetch.bind(window);
@@ -73,12 +124,30 @@ function installGitHubFetchRewrite(): void {
         const method = getRequestMethod(input, init);
         if (method !== 'GET') return originalFetch(input, init);
 
-        // --- 1) Raw file reads: raw.githubusercontent.com -> jsDelivr CDN ---
+        // --- 1) Raw file reads: raw.githubusercontent.com -> local copy -> jsDelivr CDN ---
         const rawMatch = urlStr.match(
             /^https:\/\/raw\.githubusercontent\.com\/([^/]+)\/([^/]+)\/([^/]+)\/(.+)$/
         );
         if (rawMatch) {
             const [, owner, repo, branch, path] = rawMatch;
+
+            // Static export ships `base/` from the in-repo rule library under
+            // `/base/*`. Same-origin reads are fast, offline-capable and never
+            // hit CDN limits, so try the local copy first.
+            if (path.startsWith('base/')) {
+                const localUrl = `${window.location.origin}/base/${path.slice('base/'.length)}`;
+                try {
+                    const response = await originalFetch(localUrl, init);
+                    if (response.ok) return response;
+                    console.warn(
+                        `[github-rewrite] Local base copy returned ${response.status}, trying jsDelivr`,
+                        localUrl
+                    );
+                } catch (err) {
+                    console.warn('[github-rewrite] Local base copy failed, trying jsDelivr:', err);
+                }
+            }
+
             const jsdelivrUrl = `https://cdn.jsdelivr.net/gh/${owner}/${repo}@${encodeURIComponent(branch)}/${path}`;
             try {
                 const response = await originalFetch(jsdelivrUrl, init);
@@ -110,12 +179,29 @@ function installGitHubFetchRewrite(): void {
             return originalFetch(input, init);
         }
 
-        // --- 2) Directory listing: api.github.com git/trees -> jsDelivr data API ---
+        // --- 2) Directory listing: api.github.com git/trees -> local index -> jsDelivr data API ---
         const treeMatch = urlStr.match(
             /^https:\/\/api\.github\.com\/repos\/([^/]+)\/([^/]+)\/git\/trees\/([^/?]+)/
         );
         if (treeMatch) {
             const [, owner, repo, branch] = treeMatch;
+
+            // Static export generates `_tree.json` (a git/trees-shaped index of
+            // the in-repo `base/` library). GitHub's own trees API truncates
+            // this repository and jsDelivr's flat listing is capped for large
+            // repos, so the local index is the only reliable full listing.
+            const localTreeUrl = `${window.location.origin}/base/_tree.json`;
+            try {
+                const response = await originalFetch(localTreeUrl);
+                if (response.ok) return response;
+                console.warn(
+                    `[github-rewrite] Local tree index returned ${response.status}, trying jsDelivr data API`,
+                    localTreeUrl
+                );
+            } catch (err) {
+                console.warn('[github-rewrite] Local tree index fetch failed, trying jsDelivr data API:', err);
+            }
+
             const dataUrl = `https://data.jsdelivr.com/v1/packages/gh/${owner}/${repo}@${encodeURIComponent(branch)}?structure=flat`;
             try {
                 const response = await originalFetch(dataUrl);

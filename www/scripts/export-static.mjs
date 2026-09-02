@@ -13,7 +13,7 @@
  * Output: `dist/` — a fully static folder that can be hosted anywhere.
  */
 import { spawnSync } from 'node:child_process';
-import { existsSync, renameSync, rmSync, cpSync } from 'node:fs';
+import { existsSync, renameSync, rmSync, cpSync, readdirSync, statSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -60,6 +60,66 @@ function exit(code) {
   process.exit(code);
 }
 
+/**
+ * Recursively collect every file under `dir` with its path relative to `dir`.
+ * Used to build the static GitHub-tree index of the rule library.
+ */
+function collectFiles(dir, baseRel = '') {
+  const out = [];
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    const rel = baseRel ? `${baseRel}/${name}` : name;
+    const st = statSync(full);
+    if (st.isDirectory()) {
+      out.push(...collectFiles(full, rel));
+    } else if (st.isFile()) {
+      out.push({ rel, size: st.size });
+    }
+  }
+  return out;
+}
+
+/**
+ * Stage the in-repo `base/` rule library (330+ .list / .ini / templates) as
+ * static assets so the browser WASM VFS can bootstrap from the same origin
+ * instead of a truncated GitHub/jsDelivr directory listing:
+ *   - copies `base/` -> `public/base/` (Next copies `public/` into `dist/`);
+ *   - writes `public/base/_tree.json`, a GitHub `git/trees`-shaped index the
+ *     WASM VFS loader understands, with every entry prefixed `base/`.
+ */
+function stageBaseLibrary(root, repoRoot, publicDir) {
+  const repoBase = join(repoRoot, 'base');
+  if (!existsSync(repoBase)) {
+    console.warn('[static-export] WARNING: in-repo base/ not found at', repoBase);
+    console.warn('[static-export] The rule library will fall back to remote GitHub loading.');
+    return;
+  }
+
+  const publicBase = join(publicDir, 'base');
+  if (existsSync(publicBase)) {
+    rmSync(publicBase, { recursive: true, force: true });
+  }
+  cpSync(repoBase, publicBase, { recursive: true });
+  console.log('[static-export] Copied base/ rule library -> public/base');
+
+  // git/trees-shaped index (`path` values are repo-root relative, matching the
+  // `root_path = "base"` prefix the VFS loader strips).
+  const files = collectFiles(repoBase);
+  const tree = files
+    .sort((a, b) => a.rel.localeCompare(b.rel))
+    .map((f) => ({
+      path: `base/${f.rel}`,
+      mode: '100644',
+      type: 'blob',
+      size: f.size,
+    }));
+  writeFileSync(
+    join(publicBase, '_tree.json'),
+    JSON.stringify({ sha: 'static-export-local', truncated: false, tree }, null, 0)
+  );
+  console.log(`[static-export] Wrote base/_tree.json with ${tree.length} files`);
+}
+
 let failed = false;
 
 try {
@@ -91,6 +151,11 @@ try {
     console.warn('[static-export] WARNING: monaco-editor not found at', monacoSrcDir);
     console.warn('[static-export] The code editor page will fall back to the jsdelivr CDN.');
   }
+
+  // Stage the in-repo rule library as same-origin static assets (see
+  // `stageBaseLibrary`). This must happen before `next build` so Next copies
+  // `public/base` into the output folder.
+  stageBaseLibrary(root, join(root, '..'), join(root, 'public'));
 
   if (!existsSync(nextBin)) {
     throw new Error(
@@ -126,6 +191,11 @@ try {
   if (existsSync(join(root, 'public', 'monaco'))) {
     rmSync(join(root, 'public', 'monaco'), { recursive: true, force: true });
     console.log('[static-export] Cleaned up temporary public/monaco');
+  }
+  // Same for the staged base library copy (dist/ already received it above).
+  if (existsSync(join(root, 'public', 'base'))) {
+    rmSync(join(root, 'public', 'base'), { recursive: true, force: true });
+    console.log('[static-export] Cleaned up temporary public/base');
   }
 }
 
