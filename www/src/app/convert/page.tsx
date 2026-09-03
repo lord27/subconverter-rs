@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, ChangeEvent, FormEvent, useEffect, useRef } from 'react';
+import React, { useState, useCallback, ChangeEvent, FormEvent, useEffect, useRef, useId } from 'react';
 import { useTranslations } from 'next-intl';
 import { copyToClipboard } from '@/lib/clipboard';
 import ExternalConfigSelect from '@/components/ExternalConfigSelect';
@@ -22,52 +22,123 @@ const SUPPORTED_TARGETS = [
     'ssd', 'mixed', 'singbox'
 ];
 
-const FIELDSET_LEGEND_CLASS = 'text-lg font-semibold text-gray-100 mb-2';
+type SectionAccent = 'cyan' | 'sky' | 'emerald' | 'teal' | 'amber' | 'rose';
+
+const ACCENT_META: Record<SectionAccent, { dot: string; label: string }> = {
+    cyan:    { dot: 'bg-cyan-400',    label: 'text-cyan-300' },
+    sky:     { dot: 'bg-sky-400',     label: 'text-sky-300' },
+    emerald: { dot: 'bg-emerald-400', label: 'text-emerald-300' },
+    teal:    { dot: 'bg-teal-400',    label: 'text-teal-300' },
+    amber:   { dot: 'bg-amber-400',   label: 'text-amber-300' },
+    rose:    { dot: 'bg-rose-400',    label: 'text-rose-300' },
+};
+
+// Fields belonging to each collapsible section — used to render the
+// "N configured" badge per section header.
+const SECTION_FIELDS: Record<string, string[]> = {
+    required: ['target', 'flavor', 'url'],
+    config: ['config'],
+    filter: ['include', 'exclude', 'rename', 'emoji', 'add_emoji', 'remove_emoji', 'fdn'],
+    output: ['ver', 'new_name', 'script', 'classic', 'append_type', 'list', 'sort', 'rename_node', 'expand'],
+    protocol: ['tfo', 'udp', 'scv', 'tls13'],
+    advanced: ['group', 'groups', 'ruleset', 'insert', 'prepend', 'interval', 'strict', 'sort_script', 'filter', 'dev_id', 'token', 'upload', 'upload_path'],
+};
+
+function countSetFields(fields: string[], set: ReadonlySet<string>): number {
+    let n = 0;
+    for (const f of fields) if (set.has(f)) n += 1;
+    return n;
+}
+
+/** Tiny pill showing how many fields of a section are configured. */
+function FieldCountBadge({ n }: { n: number }) {
+    return (
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-2 py-0.5 font-mono text-[11px] font-semibold leading-none text-emerald-300">
+            <span aria-hidden className="h-1 w-1 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.9)]" />
+            {n}
+        </span>
+    );
+}
 
 interface CollapsibleFieldsetProps {
     title: React.ReactNode;
     children: React.ReactNode;
-    /** Tailwind classes appended to the <fieldset> wrapper (border/accent). */
+    /** 分组序号（01/02/…） */
+    index?: string;
+    /** 状态徽标（已配置字段计数等） */
+    badge?: React.ReactNode;
+    /** 分组强调色：圆点 + 展开时的标题色 */
+    accent?: SectionAccent;
+    /** 追加到卡片容器上的 class */
     className?: string;
-    /** Tailwind classes for the legend text colour. */
-    legendClassName?: string;
-    /** Initial open state. */
+    /** 初始是否展开 */
     defaultOpen?: boolean;
 }
 
-/** A form section whose legend row can be clicked to collapse / expand its body. */
+/** A form section whose header row toggles its body open / closed. */
 function CollapsibleFieldset({
     title,
     children,
-    className = 'border-gray-300 shadow-sm',
-    legendClassName = '',
+    index,
+    badge,
+    accent = 'cyan',
+    className = '',
     defaultOpen = true,
 }: CollapsibleFieldsetProps) {
     const [open, setOpen] = useState(defaultOpen);
+    const contentId = useId();
+    const meta = ACCENT_META[accent];
+
     return (
-        <fieldset className={`p-4 border rounded-md ${className}`}>
-            <legend className="w-full cursor-pointer select-none" onClick={() => setOpen((v) => !v)}>
+        <section
+            className={`overflow-hidden rounded-xl border border-white/10 bg-[#081120]/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_16px_40px_-28px_rgba(6,182,212,0.45)] backdrop-blur-sm transition-[border-color,box-shadow] duration-200 ${className}`}
+        >
+            <button
+                type="button"
+                onClick={() => setOpen((v) => !v)}
+                aria-expanded={open}
+                aria-controls={contentId}
+                className="group flex w-full items-center gap-3 px-4 py-3.5 text-left outline-none sm:px-5"
+            >
+                {index && (
+                    <span className="hidden shrink-0 font-mono text-[11px] font-medium tracking-[0.18em] text-slate-500 transition-colors group-hover:text-slate-300 sm:inline-block">
+                        {index}
+                    </span>
+                )}
                 <span
-                    className={`${FIELDSET_LEGEND_CLASS} ${legendClassName} flex items-center justify-between gap-2`}
-                    aria-expanded={open}
+                    aria-hidden
+                    className={`h-1.5 w-1.5 shrink-0 rounded-full ${meta.dot} transition-all duration-300 ${open ? 'opacity-100' : 'opacity-35 group-hover:opacity-90'}`}
+                />
+                <span
+                    className={`flex-1 text-[15px] font-semibold tracking-wide text-slate-100 transition-colors duration-200 ${open ? meta.label : ''}`}
                 >
-                    <span>{title}</span>
-                    <svg
-                        className={`h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 ${open ? '' : '-rotate-90'}`}
-                        viewBox="0 0 20 20"
-                        fill="currentColor"
-                        aria-hidden="true"
-                    >
-                        <path
-                            fillRule="evenodd"
-                            d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-                            clipRule="evenodd"
-                        />
-                    </svg>
+                    {title}
                 </span>
-            </legend>
-            {open && children}
-        </fieldset>
+                {badge}
+                <svg
+                    aria-hidden
+                    className={`h-4 w-4 shrink-0 transition-all duration-300 ${open ? 'rotate-180 text-cyan-300' : 'rotate-0 text-slate-500 group-hover:text-cyan-300'}`}
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                >
+                    <path
+                        fillRule="evenodd"
+                        d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                        clipRule="evenodd"
+                    />
+                </svg>
+            </button>
+
+            <div
+                id={contentId}
+                className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+            >
+                <div className="min-h-0 overflow-hidden">
+                    <div className="mx-5 border-t border-white/[0.07]" />
+                    <div className="px-4 pb-5 pt-4 sm:px-5">{children}</div>
+                </div>
+            </div>
+        </section>
     );
 }
 
@@ -312,12 +383,20 @@ export default function ConvertPage() {
 
     const isSubmitDisabled = !formData.target || !formData.url || isLoading;
 
+    // Derived stats for the header console strip.
+    const urlCount = formData.url ? formData.url.split(/[|\n]/).filter((s) => s.trim().length > 0).length : 0;
+    const configuredFieldCount = setFields.size;
+    const statusMeta = isLoading
+        ? { label: 'Busy', text: 'text-amber-300', dot: 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.75)]' }
+        : !formData.target || !formData.url
+          ? { label: 'Input', text: 'text-amber-300', dot: 'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.75)]' }
+          : { label: 'Ready', text: 'text-emerald-300', dot: 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]' };
+
     // Basic styling using Tailwind (assuming setup)
-    const inputClass = "mt-1 block w-full px-3 py-2 bg-[#0a1526]/85 border border-white/10 rounded-md shadow-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/25 focus:border-cyan-400/60 sm:text-sm";
-    const checkboxClass = "h-4 w-4 text-cyan-400 border-white/20 rounded bg-[#0a1526] accent-cyan-400 focus:ring-cyan-400/30";
-    const labelClass = "block text-sm font-medium text-gray-300";
-    const buttonClass = "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-500 hover:to-sky-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent focus:ring-cyan-400/40 disabled:opacity-50";
-    const smallButtonClass = "px-3 py-1.5 text-xs rounded border transition-colors"; // For preset buttons
+    const inputClass = "mt-1 block w-full rounded-lg border bg-[#0a1526]/85 px-3 py-2 text-sm text-gray-100 shadow-inner placeholder:text-slate-500 transition-colors focus:border-cyan-400/60 focus:outline-none focus:ring-2 focus:ring-cyan-400/25 sm:text-sm";
+    const checkboxClass = "h-4 w-4 rounded border-white/20 bg-[#0a1526] accent-cyan-400 text-cyan-400 focus:ring-cyan-400/30";
+    const labelClass = "block text-sm font-medium text-slate-300";
+    const buttonClass = "btn-glow inline-flex items-center justify-center gap-2 rounded-lg border border-transparent bg-gradient-to-r from-cyan-600 to-sky-600 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:from-cyan-500 hover:to-sky-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:ring-offset-2 focus:ring-offset-transparent disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none";
 
     // Add a helper component for field labels with reset button
     const FieldLabel = ({ htmlFor, children, fieldName, required = false }: {
@@ -356,9 +435,9 @@ export default function ConvertPage() {
 
     // Update the input classes to show set vs. unset state
     const getInputClass = (fieldName: string) => {
-        const baseClass = "mt-1 block w-full px-3 py-2 bg-[#0a1526]/85 border rounded-md shadow-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/25 focus:border-cyan-400/60 sm:text-sm";
+        const baseClass = "mt-1 block w-full rounded-lg border bg-[#0a1526]/85 px-3 py-2 text-sm text-gray-100 shadow-inner placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/25 focus:border-cyan-400/60 sm:text-sm";
         if (setFields.has(fieldName)) {
-            return `${baseClass} border-emerald-400/60`;
+            return `${baseClass} border-emerald-400/50 bg-emerald-400/[0.04]`;
         }
         return `${baseClass} border-white/10`;
     };
@@ -433,14 +512,58 @@ export default function ConvertPage() {
 
     // Replace the placeholder return statement with the actual form UI
     return (
-        <div className="container mx-auto p-4 max-w-4xl">
-            <h1 className="neon-text mb-6 text-3xl font-bold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-cyan-200 to-sky-100">
-                {t('title')}
-            </h1>
+        <div className="mx-auto max-w-4xl px-4 pb-16 pt-8 sm:px-6">
+            {/* header console strip */}
+            <header className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
+                <div className="min-w-[15rem]">
+                    <p className="term-cursor font-mono text-[11px] font-medium uppercase tracking-[0.32em] text-cyan-300/90">
+                        Subconverter&nbsp;//&nbsp;Console
+                    </p>
+                    <h1 className="mt-3 text-3xl font-bold tracking-tight text-gray-50 sm:text-4xl">
+                        <span className="neon-text bg-gradient-to-r from-cyan-100 via-sky-200 to-cyan-300 bg-clip-text text-transparent">
+                            {t('title')}
+                        </span>
+                    </h1>
+                </div>
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+                {/* live status metrics */}
+                <div className="flex items-stretch overflow-hidden rounded-xl border border-white/10 bg-[#081120]/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] backdrop-blur-sm">
+                    <div className="px-4 py-3 sm:px-5">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate-500">Target</p>
+                        <p className="mt-1 font-mono text-sm font-semibold text-cyan-300">{formData.target || '—'}</p>
+                    </div>
+                    <div className="border-l border-white/[0.07] px-4 py-3 sm:px-5">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate-500">Sources</p>
+                        <p className="mt-1 font-mono text-sm font-semibold text-slate-200">{urlCount > 0 ? urlCount : '—'}</p>
+                    </div>
+                    <div className="border-l border-white/[0.07] px-4 py-3 sm:px-5">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate-500">Fields</p>
+                        <p className="mt-1 font-mono text-sm font-semibold text-slate-200">{configuredFieldCount}</p>
+                    </div>
+                    <div className="flex items-center border-l border-white/[0.07] px-4 sm:px-5">
+                        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-slate-500">Status</p>
+                        <span
+                            className={`ml-3 inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-wider ${statusMeta.text}`}
+                        >
+                            <span aria-hidden className={`h-1.5 w-1.5 rounded-full ${statusMeta.dot}`} />
+                            {statusMeta.label}
+                        </span>
+                    </div>
+                </div>
+            </header>
+
+            <div className="divider-line mb-7 mt-7" />
+
+            <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Required Section */}
-                <CollapsibleFieldset title={t('requiredSectionTitle')}>
+                <CollapsibleFieldset
+                    index="01"
+                    accent="cyan"
+                    badge={countSetFields(SECTION_FIELDS.required, setFields) > 0 ? (
+                        <FieldCountBadge n={countSetFields(SECTION_FIELDS.required, setFields)} />
+                    ) : undefined}
+                    title={t('requiredSectionTitle')}
+                >
                     <div className="grid grid-cols-1 gap-6">
                         <div>
                             <FieldLabel htmlFor="target" fieldName="target" required>{t('targetFormatLabel')}</FieldLabel>
@@ -491,9 +614,12 @@ export default function ConvertPage() {
 
                 {/* Config Section */}
                 <CollapsibleFieldset
+                    index="02"
+                    accent="sky"
+                    badge={countSetFields(SECTION_FIELDS.config, setFields) > 0 ? (
+                        <FieldCountBadge n={countSetFields(SECTION_FIELDS.config, setFields)} />
+                    ) : undefined}
                     title={t('configSectionTitle')}
-                    className="border-cyan-400/25 bg-cyan-400/[0.04]"
-                    legendClassName="text-cyan-300"
                 >
                     <div className="grid grid-cols-1 gap-4">
                         <div>
@@ -512,7 +638,15 @@ export default function ConvertPage() {
                 </CollapsibleFieldset>
 
                 {/* Filtering & Renaming Section */}
-                <CollapsibleFieldset title={t('filterRenameSectionTitle')}>
+                <CollapsibleFieldset
+                    index="03"
+                    accent="emerald"
+                    defaultOpen={false}
+                    badge={countSetFields(SECTION_FIELDS.filter, setFields) > 0 ? (
+                        <FieldCountBadge n={countSetFields(SECTION_FIELDS.filter, setFields)} />
+                    ) : undefined}
+                    title={t('filterRenameSectionTitle')}
+                >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <FieldLabel htmlFor="include" fieldName="include">{t('includeRemarksLabel')}</FieldLabel>
@@ -563,7 +697,7 @@ export default function ConvertPage() {
                                         onChange={handleInputChange}
                                         className={checkboxClass}
                                     />
-                                    <label htmlFor="emoji" className="ml-2 block text-sm text-gray-900">{t('emojiAddRemoveLabel')}</label>
+                                    <label htmlFor="emoji" className="ml-2 text-sm text-slate-300">{t('emojiAddRemoveLabel')}</label>
                                 </div>
                             </div>
                             <div className="flex items-center space-x-4 pl-4">
@@ -577,7 +711,7 @@ export default function ConvertPage() {
                                         className={checkboxClass}
                                         disabled={formData.emoji}
                                     />
-                                    <label htmlFor="add_emoji" className="ml-2 block text-sm text-gray-900">{t('emojiAddOnlyLabel')}</label>
+                                    <label htmlFor="add_emoji" className="ml-2 text-sm text-slate-300">{t('emojiAddOnlyLabel')}</label>
                                 </div>
                                 <div className="flex items-center">
                                     <input
@@ -589,7 +723,7 @@ export default function ConvertPage() {
                                         className={checkboxClass}
                                         disabled={formData.emoji}
                                     />
-                                    <label htmlFor="remove_emoji" className="ml-2 block text-sm text-gray-900">{t('emojiRemoveOnlyLabel')}</label>
+                                    <label htmlFor="remove_emoji" className="ml-2 text-sm text-slate-300">{t('emojiRemoveOnlyLabel')}</label>
                                 </div>
                             </div>
                             <p className="mt-1 text-xs text-gray-500 pl-4">{t('emojiHelp')}</p>
@@ -609,7 +743,15 @@ export default function ConvertPage() {
                 </CollapsibleFieldset>
 
                 {/* Output Options Section */}
-                <CollapsibleFieldset title={t('outputOptionsSectionTitle')}>
+                <CollapsibleFieldset
+                    index="04"
+                    accent="teal"
+                    defaultOpen={false}
+                    badge={countSetFields(SECTION_FIELDS.output, setFields) > 0 ? (
+                        <FieldCountBadge n={countSetFields(SECTION_FIELDS.output, setFields)} />
+                    ) : undefined}
+                    title={t('outputOptionsSectionTitle')}
+                >
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 items-center">
                         {/* Surge Specific */}
                         {formData.target === 'surge' && (
@@ -724,7 +866,15 @@ export default function ConvertPage() {
                 </CollapsibleFieldset>
 
                 {/* Protocol Flags Section */}
-                <CollapsibleFieldset title={t('protocolFlagsSectionTitle')}>
+                <CollapsibleFieldset
+                    index="05"
+                    accent="amber"
+                    defaultOpen={false}
+                    badge={countSetFields(SECTION_FIELDS.protocol, setFields) > 0 ? (
+                        <FieldCountBadge n={countSetFields(SECTION_FIELDS.protocol, setFields)} />
+                    ) : undefined}
+                    title={t('protocolFlagsSectionTitle')}
+                >
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
                         <div className="flex items-center space-x-2">
                             <input
@@ -774,7 +924,15 @@ export default function ConvertPage() {
                 </CollapsibleFieldset>
 
                 {/* Advanced Section */}
-                <CollapsibleFieldset title={t('advancedSectionTitle')}>
+                <CollapsibleFieldset
+                    index="06"
+                    accent="rose"
+                    defaultOpen={false}
+                    badge={countSetFields(SECTION_FIELDS.advanced, setFields) > 0 ? (
+                        <FieldCountBadge n={countSetFields(SECTION_FIELDS.advanced, setFields)} />
+                    ) : undefined}
+                    title={t('advancedSectionTitle')}
+                >
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <FieldLabel htmlFor="group" fieldName="group">{t('customGroupNameLabel')}</FieldLabel>
@@ -932,95 +1090,130 @@ export default function ConvertPage() {
                     </div>
                 </CollapsibleFieldset>
 
-                {/* Submission Button */}
-                <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">
-                    <div className="text-sm text-gray-500">
-                        {t('setFieldsInfo')} <span className="text-green-600">({t('fieldSet')})</span> {t('setFieldsInfoSuffix')}
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <div className="flex items-center">
-                            <input
-                                id="saveApiUrl"
-                                type="checkbox"
-                                checked={saveApiUrl}
-                                onChange={(e) => setSaveApiUrl(e.target.checked)}
-                                className={checkboxClass}
-                            />
-                            <label htmlFor="saveApiUrl" className="ml-2 text-sm text-gray-700">
-                                {t('saveAsSubscription')}
+                {/* Submission Bar */}
+                <div className="panel mt-6 rounded-xl p-4 sm:p-5">
+                    <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="min-w-0 space-y-3">
+                            <div className="flex items-center gap-2">
+                                <span aria-hidden className="h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.9)]" />
+                                <p className="text-sm leading-relaxed text-slate-300">
+                                    {t('setFieldsInfo')} <span className="font-medium text-emerald-300">({t('fieldSet')})</span> {t('setFieldsInfoSuffix')}
+                                </p>
+                            </div>
+                            <label className="inline-flex cursor-pointer items-center gap-2.5 text-sm text-slate-300 transition-colors hover:text-slate-100">
+                                <input
+                                    id="saveApiUrl"
+                                    type="checkbox"
+                                    checked={saveApiUrl}
+                                    onChange={(e) => setSaveApiUrl(e.target.checked)}
+                                    className={checkboxClass}
+                                />
+                                <span>{t('saveAsSubscription')}</span>
                             </label>
                         </div>
-                        <button
-                            type="submit"
-                            disabled={isSubmitDisabled || shortUrlCreating}
-                            className={buttonClass}
-                        >
-                            {isLoading ? t('generatingButton') : (shortUrlCreating ? t('creatingShortUrlButton') : t('generateButton'))}
-                        </button>
+                        <div className="flex shrink-0 items-center gap-3">
+                            <button
+                                type="submit"
+                                disabled={isSubmitDisabled || shortUrlCreating}
+                                className={`${buttonClass} px-8 py-3`}
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <span aria-hidden className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                                        {t('generatingButton')}
+                                    </>
+                                ) : (shortUrlCreating ? t('creatingShortUrlButton') : t('generateButton'))}
+                            </button>
+                        </div>
                     </div>
                 </div>
             </form>
 
             {/* Results Section */}
-            <div className="mt-8">
+            <div className="mt-8 space-y-4">
                 {isLoading && !result && ( // Only show main loading if no result yet
-                    <div className="text-center p-4">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto"></div>
-                        <p className="mt-2 text-sm text-gray-400">{t('processing')}</p>
+                    <div className="panel rounded-xl p-8 text-center">
+                        <span aria-hidden className="mx-auto block h-9 w-9 animate-spin rounded-full border-2 border-cyan-400/25 border-t-cyan-300" />
+                        <p className="mt-4 font-mono text-sm text-slate-300">{t('processing')}</p>
                     </div>
                 )}
 
                 {error && (
-                    <div className="p-4 border border-red-400/50 bg-red-500/10 rounded-md">
-                        <h3 className="text-lg font-semibold text-red-300">{commonT('error')}</h3>
-                        <p className="text-red-200/90">{error.error}</p>
-                        {error.details && <p className="mt-1 text-sm text-red-300/80">{error.details}</p>}
+                    <div className="overflow-hidden rounded-xl border border-red-400/30 bg-red-500/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]">
+                        <div className="flex items-center gap-2.5 border-b border-red-400/20 px-5 py-3">
+                            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-red-400 shadow-[0_0_8px_rgba(248,113,113,0.9)]" />
+                            <h3 className="text-sm font-semibold text-red-300">{commonT('error')}</h3>
+                        </div>
+                        <div className="px-5 py-4">
+                            <p className="text-sm text-red-200/90">{error.error}</p>
+                            {error.details && <p className="mt-1 font-mono text-xs text-red-300/70">{error.details}</p>}
+                        </div>
                     </div>
                 )}
 
                 {result && !error && (
-                    <div className="p-4 border border-emerald-400/40 bg-emerald-500/[0.07] rounded-md">
-                        <h3 className="text-lg font-semibold text-emerald-300">{t('resultTitle')}</h3>
-                        <p className="text-sm text-gray-400 mb-2">{t('contentTypeLabel')}: {result.content_type}</p>
-
-                        {/* API URL Display */}
-                        <div className="mb-4 p-3 bg-[#060e1c]/70 border border-white/10 rounded-md">
-                            <div className="flex justify-between items-center mb-2">
-                                <h4 className="font-medium text-gray-200">{t('subscriptionUrlDisplay')}</h4>
-                                <button
-                                    onClick={() => copyToClipboard(shortUrlData && shortUrlCreated ? shortUrlData.short_url : generateApiUrl())}
-                                    className="text-xs px-2 py-1 bg-cyan-400/10 border border-cyan-400/30 text-cyan-200 hover:bg-cyan-400/20 rounded"
-                                >
-                                    {commonT('copy')}
-                                </button>
+                    <div className="overflow-hidden rounded-xl border border-emerald-400/25 bg-emerald-500/[0.04] shadow-[inset_0_1px_0_rgba(255,255,255,0.03),0_16px_40px_-28px_rgba(52,211,153,0.4)]">
+                        {/* Result header */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.07] px-5 py-3.5">
+                            <div className="flex items-center gap-2.5">
+                                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]" />
+                                <h3 className="text-sm font-semibold text-emerald-300">{t('resultTitle')}</h3>
                             </div>
-                            <p className="text-xs break-all font-mono bg-[#04090f] p-2 rounded border border-white/10 text-cyan-100/80">
-                                {shortUrlData && shortUrlCreated ? shortUrlData.short_url : generateApiUrl()}
-                            </p>
-                            {shortUrlCreating && (
-                                <p className="text-xs text-cyan-300 mt-1">{t('creatingShortUrl')}</p>
-                            )}
-                            <p className="text-xs text-gray-500 mt-1">
-                                {t('useUrlMessage')}
-                                {saveApiUrl && !shortUrlCreated && !shortUrlCreating && t('urlWillBeSaved')}
-                                {shortUrlCreated && t('shortUrlMessage')}
-                            </p>
+                            <span className="rounded-md border border-white/10 bg-[#060e1c]/80 px-2.5 py-1 font-mono text-[11px] text-slate-400">
+                                {result.content_type}
+                            </span>
                         </div>
 
-                        <textarea
-                            readOnly
-                            value={result.content}
-                            rows={15}
-                            className="w-full p-2 border border-white/10 rounded-md font-mono text-sm bg-[#04090f] text-gray-200"
-                            aria-label={t('conversionResultAriaLabel')}
-                        />
-                        <div className="mt-4 flex justify-end">
-                            <button
-                                onClick={handleDownload}
-                                className={buttonClass}
-                            >
-                                {t('downloadConfigButton')}
-                            </button>
+                        <div className="space-y-4 p-5">
+                            {/* API URL Display */}
+                            <div className="overflow-hidden rounded-lg border border-white/10 bg-[#060e1c]/70">
+                                <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
+                                    <h4 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                                        {t('subscriptionUrlDisplay')}
+                                    </h4>
+                                    <button
+                                        onClick={() => copyToClipboard(shortUrlData && shortUrlCreated ? shortUrlData.short_url : generateApiUrl())}
+                                        className="rounded-md border border-cyan-400/30 bg-cyan-400/10 px-2.5 py-1 text-xs font-medium text-cyan-200 transition-colors hover:bg-cyan-400/20"
+                                    >
+                                        {commonT('copy')}
+                                    </button>
+                                </div>
+                                <p className="break-all border-t border-white/[0.07] px-3.5 py-2.5 font-mono text-xs leading-relaxed text-cyan-100/85">
+                                    {shortUrlData && shortUrlCreated ? shortUrlData.short_url : generateApiUrl()}
+                                </p>
+                                {shortUrlCreating && (
+                                    <p className="border-t border-white/[0.07] px-3.5 py-2 text-xs text-cyan-300">
+                                        <span className="mr-1.5 inline-block h-3 w-3 animate-spin rounded-full border border-cyan-400/30 border-t-cyan-300 align-[-2px]" />
+                                        {t('creatingShortUrl')}
+                                    </p>
+                                )}
+                                <p className="border-t border-white/[0.07] px-3.5 py-2 text-xs text-slate-500">
+                                    {t('useUrlMessage')}
+                                    {saveApiUrl && !shortUrlCreated && !shortUrlCreating && t('urlWillBeSaved')}
+                                    {shortUrlCreated && t('shortUrlMessage')}
+                                </p>
+                            </div>
+
+                            <textarea
+                                readOnly
+                                value={result.content}
+                                rows={15}
+                                className="w-full rounded-lg border border-white/10 bg-[#04090f] p-3.5 font-mono text-sm leading-relaxed text-gray-200 focus:border-cyan-400/40 focus:outline-none"
+                                aria-label={t('conversionResultAriaLabel')}
+                                spellCheck={false}
+                            />
+                            <div className="flex flex-wrap items-center justify-end gap-3">
+                                <button
+                                    onClick={handleDownload}
+                                    className={`${buttonClass} px-8 py-3`}
+                                >
+                                    <svg aria-hidden className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                        <path d="M10.75 2.75a.75.75 0 00-1.5 0v8.614L6.295 8.235a.75.75 0 10-1.09 1.03l4.25 4.5a.75.75 0 001.09 0l4.25-4.5a.75.75 0 00-1.09-1.03l-2.955 3.129V2.75z" />
+                                        <path d="M3.5 12.75a.75.75 0 00-1.5 0v2.5A2.75 2.75 0 004.75 18h10.5A2.75 2.75 0 0018 15.25v-2.5a.75.75 0 00-1.5 0v2.5c0 .69-.56 1.25-1.25 1.25H4.75c-.69 0-1.25-.56-1.25-1.25v-2.5z" />
+                                    </svg>
+                                    {t('downloadConfigButton')}
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
