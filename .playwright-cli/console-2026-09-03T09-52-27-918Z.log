@@ -1,0 +1,8 @@
+[     204ms] [LOG] AppInitializer: Initialized flag = true @ http://localhost:8099/_next/static/chunks/app/layout-8344ade73335e1ea.js:0
+[     219ms] [WARNING] [github-rewrite] Purged stale GitHub tree cache: subconverter_kv_v1_lonelam/subconverter-rs@main@1@@github_tree_cache @ http://localhost:8099/_next/static/chunks/902-76b09a604e5409cb.js:0
+[     464ms] [INFO] WASM logging initialized at level: INFO with stack trace support @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     470ms] [INFO] admin_file_exists called with path: downloads/available_downloads.json @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     472ms] [INFO] Initializing VercelKvVfs... @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     473ms] [INFO] Initialized GitHub config: repo=lonelam/subconverter-rs, branch=main, root_path=base @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     474ms] [INFO] VercelKvVfs initialized successfully. @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     480ms] [INFO] admin_read_file called with path: downloads/available_downloads.json @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1

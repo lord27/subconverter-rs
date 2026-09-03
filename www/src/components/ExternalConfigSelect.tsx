@@ -6,7 +6,7 @@ import { EXTERNAL_CONFIG_OPTIONS } from '@/generated/external-configs';
 
 /**
  * Dropdown that lets the user pick an external rule-set config (INI) from the
- * configs bundled with the site (`/base/config`, `/config/Aethersailor`, ...),
+ * configs bundled with the site (`/base/config`, i.e. repo `base/config`),
  * or fall back to a free-form custom URL / remote link when nothing bundled
  * fits ("自定义 URL / 远程链接…").
  */
@@ -73,15 +73,21 @@ export default function ExternalConfigSelect({
             >
                 <option value="">{t('externalConfigSelectPlaceholder')}</option>
                 <option value={CUSTOM_VALUE}>{t('externalConfigCustom')}</option>
-                {groups.map(([group, options]) => (
-                    <optgroup key={group} label={group}>
-                        {options.map((o) => (
-                            <option key={o.value} value={o.value}>
-                                {o.label}
-                            </option>
-                        ))}
-                    </optgroup>
-                ))}
+                {groups.length === 1
+                    ? groups[0][1].map((o) => (
+                          <option key={o.value} value={o.value}>
+                              {o.label}
+                          </option>
+                      ))
+                    : groups.map(([group, options]) => (
+                          <optgroup key={group} label={group}>
+                              {options.map((o) => (
+                                  <option key={o.value} value={o.value}>
+                                      {o.label}
+                                  </option>
+                              ))}
+                          </optgroup>
+                      ))}
             </select>
 
             {(customEditing || isCustom) && (
