@@ -56,7 +56,13 @@ git clone https://github.com/lonelam/subconverter-rs.git
 cd subconverter-rs
 cargo build --release --features=web-api
 ```
-二进制文件将位于 `target/release/subconverter-rs`。
+二进制文件将位于 `target/release/subconverter`。
+
+**Cargo features：**
+- `web-api` — 编译原生 HTTP 服务端（actix-web）。
+- `js-runtime` — 启用内置 JS 引擎，使 `filter_script` / `sort_script` 参数生效（默认关闭，出于安全考虑）。
+
+如需 WASM 构建，见 [Library-and-WASM](wiki/Library-and-WASM.md) 与文末 Web UI 章节。
 
 ---
 
@@ -76,6 +82,7 @@ cargo build --release --features=web-api
 - [外部配置](#外部配置)
 - [模板功能](#模板功能)
 - [特别用法](#特别用法)
+- [Web UI（Next.js 前端）](#-web-ui)
 
 * * *
 
@@ -87,7 +94,7 @@ cargo build --release --features=web-api
 
 | 协议 \ 规则类型 | Clash | SingBox | Surge(2,3,4) | V2Ray | Quantumult | Quantumult X | Loon | Surfboard | Mellow | SIP002/8 | 混合(Mixed) | 类TG代理 |
 |--------------|:-----:|:-------:|:-----:|:-----:|:----------:|:------------:|:----:|:---------:|:------:|:--------:|:----------:|:-----:|
-| AnyTLS       | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| AnyTLS       | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ⬇️ | ⬇️ |
 | VLESS        | ✅ | ✅ | ⚠️ | ✅ | ❌ | ⚠️ | ⚠️ | ❌ | ❌ | ❌ | ⬇️ | ⬇️ |
 | Hysteria/2   | ✅ | ✅ | ⚠️ | ❌ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ❌ | ⬇️ | ⬇️ |
 | VMess        | ✅ | ✅ | ⚠️ | ✅ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ❌ | ✅ | ⬇️ |
@@ -96,7 +103,8 @@ cargo build --release --features=web-api
 | SSR          | ✅ | ✅ | ⚠️ | ❌ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ❌ | ✅ | ⬇️ |
 | HTTP/SOCKS   | ✅ | ✅ | ⚠️ | ❌ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ❌ | ⬇️ | ⬇️ |
 | WireGuard    | ✅ | ✅ | ⚠️ | ⬇️ | ❌ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ | ⬇️ | ⬇️ |
-| Snell        | ✅ | ❌ | ⚠️ | ❌ | ❌ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ | ⬇️ | ⬇️ |
+| Snell        | ✅ | ❌ | ✅ | ❌ | ❌ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ | ⬇️ | ⬇️ |
+| TUIC         | ✅ | ✅ | ⚠️ | ❌ | ⚠️ | ⚠️ | ⚠️ | ⚠️ | ❌ | ❌ | ⬇️ | ⬇️ |
 | SSD          | ⬇️ | ⬇️ | ⬇️ | ⬇️ | ⬇️ | ⬇️ | ⬇️ | ⬇️ | ⬇️ | ⬇️ | ❌ | ⬇️ |
 
 **图例说明：**
@@ -111,16 +119,19 @@ cargo build --release --features=web-api
 2. 类 TG 代理的 HTTP/Socks 链接由于没有命名设定，所以可以在后方插入 `&remarks=` 进行命名，同时也可以插入 `&group=` 设置组别名称，这两个参数需要经过 [URLEncode](https://www.urlencoder.org/) 处理
 3. 目标类型为 `mixed` 时，会输出所有支持的节点的单链接组成的普通订阅（Base64编码）
 4. 🚧目标类型为 `auto` 时，会根据请求的 `User-Agent` 自动判断输出的目标类型
+5. 上表仅为快速概览，个别单元格可能滞后于实现；逐格最新状态请以源码 / golden 测试与 Wiki 的 [Protocols-and-Targets](wiki/Protocols-and-Targets.md) 页面为准。
 
 * * *
 
-## 🛣️ 未来计划
+## 🛣️ 现状与路线
 
-以下是一些计划在未来版本中推出的功能：
+> 原生 HTTP 服务当前只提供 `/sub`、`/surge2clash` 与 `/{target}` 速写端点；其余能力通过 WASM 构建与 Web UI 提供，或仍在推进中（详见 [Library-and-WASM](wiki/Library-and-WASM.md)）。
 
-- **Gist 发布**: 自动将生成的配置上传到 GitHub Gist。
-- **AnyTLS 协议支持**: 添加对 AnyTLS 协议的支持。
-- **可视化规则组配置**: 实现用于配置规则组的图形界面。
+原「未来计划」中的条目均已完成：
+
+- ✅ **Gist 自动发布**：`upload=true` 并配置 `gistconf.ini` 后，生成结果会以私有 Gist 上传并返回地址。
+- ✅ **AnyTLS 协议支持**：已完成 `anytls://` 输入解析，并支持输出到 Clash / SingBox。
+- ✅ **可视化规则组 / 规则集配置**：Web UI 的转换页与配置编辑器中提供图形化编辑（见 [Web UI](#-web-ui)）。
 
 * * *
 
@@ -128,25 +139,26 @@ cargo build --release --features=web-api
 
 | 功能 | 状态 | 说明 |
 |------|:----:|------|
-| 核心转换引擎 | ✅ | 基本的代理解析和格式之间的转换 |
-| 节点操作 | ✅ | 过滤、重命名和预处理节点 |
-| 配置文件支持 | ✅ | 支持 INI/YAML/TOML 配置 |
-| 命令行接口 | ✅ | 基本的命令行操作接口 |
-| 节点过滤 | ✅ | 基于备注和规则过滤节点 |
-| Emoji 支持 | ✅ | 向节点备注添加 Emoji |
+| 核心转换引擎 | ✅ | 代理解析与格式间转换（含 TUIC / AnyTLS / VLESS / Hysteria2 等） |
+| 节点操作 | ✅ | 过滤、重命名、排序与预处理节点 |
+| 配置文件支持 | ✅ | 支持 INI/YAML/TOML（`pref.toml` / `pref.yml` / `pref.ini`） |
+| 命令行接口 | ✅ | `subconverter --url … --output …` 单次转换，或直接启动服务 |
+| 节点过滤 | ✅ | 基于备注 / 正则过滤；JS 脚本过滤需 `js-runtime` feature |
+| Emoji 支持 | ✅ | 向节点备注添加 / 移除 Emoji |
 | 重命名规则 | ✅ | 基于自定义规则重命名节点 |
-| 模板系统 | ✅ | 支持可自定义模板 |
-| 规则转换 | ✅ | 规则集合转换功能（部分实现） |
-| HTTP 服务器 | ✅ | 用于订阅转换的 Web 服务器，实现核心sub接口 |
-| 额外 API 端点 | ⚠️ | 如 /surge2clash, /getprofile 等（部分实现） |
-| 自动上传到 Gist | ❌ | 自动上传生成的配置（计划中） |
-| RESTful API | ❌ | 用于集成的完整 API（部分实现） |
+| 模板系统 | ✅ | 可自定义模板（INJA 风格语法） |
+| 规则 / 规则集转换 | 🚧 | 能力保留在核心模块与 WASM API 中 |
+| HTTP 服务器 | ✅ | 提供 `/sub`、`/surge2clash`、`/{target}` 端点 |
+| 自动上传到 Gist | ✅ | 配置 `gistconf.ini` 后，`upload=true` 生效 |
+| WebAssembly | ✅ | 同一引擎可编译为 WASM，浏览器 / Node / Serverless 运行 |
+| Web UI | ✅ | Next.js 前端：转换、短链接、配置编辑、中英文界面 |
+| 短链接 | ✅ | 生成与管理分享短链（Vercel KV / Netlify Blobs / localStorage） |
 
 图例:
 - ✅ 完全实现
-- 🚧 部分实现/施工中
-- ⚠️ 有限支持
-- ❌ 尚未实现/已废弃
+- 🚧 部分实现 / 施工中
+- ⚠️ 有限支持（如需额外编译 feature）
+- ❌ 尚未实现 / 已废弃
 
 ## 简易用法
 
@@ -166,6 +178,14 @@ http://127.0.0.1:25500/sub?target=%TARGET%&url=%URL%&config=%CONFIG%
 | url | 必要 | https%3A%2F%2Fwww.xxx.com | 指机场所提供的订阅链接或代理节点的分享链接，需要经过 [URLEncode](https://www.urlencoder.org/) 处理 | ✅ |
 | config | 可选 | https%3A%2F%2Fwww.xxx.com | 指外部配置的地址 (包含分组和规则部分)，需要经过 [URLEncode](https://www.urlencoder.org/) 处理，详见 [外部配置](#外部配置)，当此参数不存在时使用程序的主程序目录中的配置文件 | ✅ |
 | flavor | 可选 | premium / stash | 目标 Clash 内核流派，默认 mihomo（完整特性集）；premium 与 stash 会自动剔除对应客户端无法加载的协议与字段（如 Premium 不支持 VLESS/Hysteria2，Stash 不支持 uTLS 指纹） | ✅ |
+
+原生 HTTP 服务（以 `--features=web-api` 编译）提供以下端点：
+
+| 端点 | 说明 |
+| ---- | ---- |
+| `/sub` | 功能完整的订阅转换（参数见上表） |
+| `/surge2clash` | Surge 订阅 → Clash 节点列表（`?link=...`，无需 URLEncode） |
+| `/{target}` | `/sub` 的速写形式：target 取自路径（如 `/clash?url=...`） |
 
 运行 subconverter-rs 主程序后，按照 [调用说明](#调用说明) 的对应内容替换即可得到一份使用**默认设置**的订阅。
 
@@ -280,17 +300,17 @@ http://127.0.0.1:25500/sub?target=%TARGET%&url=%URL%&emoji=%EMOJI%····
 | target | 必要 | surge&ver=4 | 指想要生成的配置类型，详见上方 [支持类型](#支持类型) 中的参数 | ✅ |
 | url | 可选 | https%3A%2F%2Fwww.xxx.com | 指机场所提供的订阅链接或代理节点的分享链接，需要经过 [URLEncode](https://www.urlencoder.org/) 处理，**可选的前提是在 `default_url` 中进行指定**。也可以使用 data URI。可使用 `tag:xxx,https%3A%2F%2Fwww.xxx.com` 指定该订阅的所有节点归属于`xxx`分组，用于配置文件中的`!!GROUP=XXX` 匹配 | ✅ |
 | group | 可选 | MySS | 用于设置该订阅的组名，多用于 SSD/SSR | ✅ |
-| upload_path | 可选 | MySS.yaml | 用于将生成的订阅文件上传至 `Gist` 后的名称，需要经过 [URLEncode](https://www.urlencoder.org/) 处理 | ❌ |
+| upload_path | 可选 | MySS.yaml | 用于设置上传至 `Gist` 后生成的文件名，需要经过 [URLEncode](https://www.urlencoder.org/) 处理 | ✅ |
 | include | 可选 | 详见下文中 `include_remarks` | 指仅保留匹配到的节点，支持正则匹配，需要经过 [URLEncode](https://www.urlencoder.org/) 处理，会覆盖配置文件里的设置 | ✅ |
 | exclude | 可选 | 详见下文中 `exclude_remarks` | 指排除匹配到的节点，支持正则匹配，需要经过 [URLEncode](https://www.urlencoder.org/) 处理，会覆盖配置文件里的设置 | ✅ |
 | config | 可选 | https%3A%2F%2Fwww.xxx.com | 指外部配置的地址 (包含分组和规则部分)，需要经过 [URLEncode](https://www.urlencoder.org/) 处理，详见 [外部配置](#外部配置)，当此参数不存在时使用主程序目录中的配置文件 | ✅ |
-| dev_id | 可选 | 92DSAFA | 用于设置 QuantumultX 的远程设备 ID, 以在某些版本上开启远程脚本 | ✅ |
+| dev_id | 可选 | 92DSAFA | 用于设置 QuantumultX 的远程设备 ID（参数已解析，但当前版本尚未启用） | ❌ |
 | filename | 可选 | MySS | 指定所生成订阅的文件名，可以在 Clash For Windows 等支持文件名的软件中显示出来 | ✅ |
 | interval | 可选 | 43200 | 用于设置托管配置更新间隔，确定配置将更新多长时间，单位为秒 | 🚧 |
 | rename | 可选 | 详见下文中 `rename` | 用于自定义重命名，需要经过 [URLEncode](https://www.urlencoder.org/) 处理，会覆盖配置文件里的设置 | ✅ |
-| filter_script | 可选 | 详见下文中 `filter_script` | 用于自定义筛选节点的js代码，需要经过 [URLEncode](https://www.urlencoder.org/) 处理，会覆盖配置文件里的设置。出于安全考虑，链接需包含正确的 `token` 参数，才会应用该设置 | ❌ |
+| filter_script | 可选 | 详见下文中 `filter_script` | 用于自定义筛选节点的js代码，需要经过 [URLEncode](https://www.urlencoder.org/) 处理，会覆盖配置文件里的设置。出于安全考虑，链接需包含正确的 `token` 参数，才会应用该设置 | ⚠️ |
 | strict | 可选 | true / false | 如果设置为 true，则 Surge 将在上述间隔后要求强制更新 | 🚧 |
-| upload | 可选 | true / false | 用于将生成的订阅文件上传至 `Gist`，需要填写`gistconf.ini`，默认为 false (即不上传) ,详见 [自动上传](#自动上传) | ❌ |
+| upload | 可选 | true / false | 用于将生成的订阅文件上传至 `Gist`，需要填写`gistconf.ini`，默认为 false（即不上传），详见 [自动上传](#自动上传) | ✅ |
 | emoji | 可选 | true / false | 用于设置节点名称是否包含 Emoji，默认为 true | ✅ |
 | add_emoji | 可选 | true / false | 用于在节点名称前加入 Emoji，默认为 true | ✅ |
 | remove_emoji | 可选 | true / false | 用于设置是否删除节点名称中原有的 Emoji，默认为 true | ✅ |
@@ -299,35 +319,24 @@ http://127.0.0.1:25500/sub?target=%TARGET%&url=%URL%&emoji=%EMOJI%····
 | udp | 可选 | true / false | 用于开启该订阅链接的 UDP，默认为 false | ✅ |
 | list | 可选 | true / false | 用于输出 Surge Node List 或者 Clash Proxy Provider 或者 Quantumult (X) 的节点订阅 或者 解码后的 SIP002 | ✅ |
 | sort | 可选 | true / false | 用于对输出的节点或策略组按节点名进行再次排序，默认为 false | ✅ |
-| sort_script | 可选 | 详见下文 `sort_script` | 用于自定义排序的js代码，需要经过 [URLEncode](https://www.urlencoder.org/) 处理，会覆盖配置文件里的设置。出于安全考虑，链接需包含正确的 `token` 参数，才会应用该设置 | ❌ |
+| sort_script | 可选 | 详见下文 `sort_script` | 用于自定义排序的js代码，需要经过 [URLEncode](https://www.urlencoder.org/) 处理，会覆盖配置文件里的设置。出于安全考虑，链接需包含正确的 `token` 参数，才会应用该设置 | ⚠️ |
 | script | 可选 | true / false | 用于生成Clash Script，默认为 false | ❌ |
 | insert | 可选 | true / false | 用于设置是否将配置文件中的 `insert_url` 插入，默认为 true | ✅ |
 | scv | 可选 | true / false | 用于关闭 TLS 节点的证书检查，默认为 false | ✅ |
-| fdn | 可选 | true / false | 用于过滤目标类型不支持的节点，默认为 true | ❌ |
-| expand | 可选 | true / false | 用于在 API 端处理或转换 Surge, QuantumultX, Clash 的规则列表，即是否将规则全文置入订阅中，默认为 true，设置为 false 则不会将规则全文写进订阅 | 🚧 |
+| fdn | 可选 | true / false | 用于过滤目标类型不支持的节点，默认为 true | ✅ |
+| expand | 可选 | true / false | 用于在 API 端处理或转换 Surge, QuantumultX, Clash 的规则列表，即是否将规则全文置入订阅中，默认为 true，设置为 false 则不会将规则全文写进订阅 | ✅ |
 | append_info | 可选 | true / false | 用于输出包含流量或到期信息的节点, 默认为 true，设置为 false 则取消输出 | ❌ |
 | prepend | 可选 | true / false | 用于设置插入 `insert_url` 时是否插入到所有节点前面，默认为 true | ✅ |
 | classic | 可选 | true / false | 用于设置是否生成 Clash classical rule-provider | ⚠️ |
 | tls13 | 可选 | true / false | 用于设置是否为节点增加tls1.3开启参数 | ✅ |
 
-### 配置档案
+> 上表为常用参数对照；`upload` / `upload_path` 上传结果到 Gist（需先配置 `gistconf.ini`），`filter_script` / `sort_script` 需以 `--features=js-runtime` 编译才会真正执行，`dev_id` 当前版本解析但不生效。完整参数参考见 Wiki [HTTP-API](wiki/HTTP-API.md)。
 
-> 当通过上述[进阶链接](#进阶链接)配置好订阅链接后，通常会使得链接十分冗长和难以记忆，此时可以考虑使用配置档案。（🚧 部分实现）
+### 配置档案 / 保存配置
 
-此功能暂时**仅能读取本地文件**
+> 把常用参数保存为档案，可以避免每次都拼接冗长的订阅链接。
 
-#### 调用地址 (档案)
-
-```txt
-http://127.0.0.1:25500/getprofile?name=%NAME%&token=%TOKEN%
-```
-
-#### 调用说明 (档案)
-
-| 调用参数 | 必要性 | 示例 | 解释 | 状态 |
-| ------ | :--: | :--- | ---- | :---: |
-| name | 必要 | profiles/formyairport.ini | 指配置档案的存储位置(可使用基于**pref 配置文件**的相对位置) | 🚧 |
-| token | 必要 | passwd | 为了安全考虑**必须设置token**（详见 [配置文件](#配置文件) 中 `[common] 部分` 对 `api_access_token` 的描述） | 🚧 |
+在 Web UI 中可保存/管理配置档案与分享短链（见 [Web UI](#-web-ui)）；历史上 C++ 版的 `/getprofile` 等端点在本 Rust 版本的原生 HTTP 服务中**暂不暴露**（相关能力正在 WASM / Serverless 架构下重构，参见 [Library-and-WASM](wiki/Library-and-WASM.md) 与源码 `src/api/`）。
 
 ### 配置文件
 
@@ -465,9 +474,9 @@ http://127.0.0.1:25500/getprofile?name=%NAME%&token=%TOKEN%
 
 ### 外部配置
 
-> 本部分用于链接参数 **`&config=`**（🚧 部分实现）
+> 本部分用于链接参数 **`&config=`**（✅ 已实现）
 
-将配置文件上传至 Github Gist 或者其他**可访问**网络位置，经过 [URLEncode](https://www.urlencoder.org/) 处理后，添加至 `&config=` 即可调用。
+将配置文件上传至 GitHub Gist 或其他**可访问**网络位置，经过 [URLEncode](https://www.urlencoder.org/) 处理后添加至 `&config=` 即可调用；也可以直接使用**仓库内置**的预置配置（`base/config` 目录，如 Web UI 下拉列表中的 ACL4SSR / Aethersailor 等预设）。
 
 注意：由外部配置中所定义的值会**覆盖**主程序目录中配置文件里的内容
 
@@ -483,48 +492,75 @@ http://127.0.0.1:25500/getprofile?name=%NAME%&token=%TOKEN%
 
 #### 直接渲染
 
-在调试或需要直接对模板进行渲染时，可以使用以下方式调用：
-
-```txt
-http://127.0.0.1:25500/render?path=xxx&额外的调试或控制参数
-```
+> 注：C++ 版的 `/render` 端点在本 Rust 版本的原生 HTTP 服务中暂不暴露；模板渲染能力仍保留在核心模块（WASM / 库 API，见 [Library-and-WASM](wiki/Library-and-WASM.md)）。
 
 ## 特别用法
 
-### 本地生成
+### 命令行本地生成
 
-> 在本地生成对应的配置文件文本（🚧 部分实现）
+无需启动服务，直接把完整的请求 URL 交给引擎并写出到文件即可（旧版 `generate.ini` / `-g` 参数已移除）：
 
-在程序目录内的 `generate.ini` 中设定文件块(`[xxx]`)，生成的文件名(path=xxx)以及其所需要包含的参数：
-
-```ini
-[test]
-path=output.conf
-target=surge
-ver=4
-url=ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpwYXNzd29yZA@www.example.com:1080#Example
+```bash
+subconverter \
+  --config pref.ini \
+  --url "/sub?target=clash&url=https%3A%2F%2Fexample.com%2Fsubscribe%2FABCDE" \
+  --output output.yaml
 ```
 
-使用 `subconverter -g` 启动本程序时，即可在程序根目录内生成名为 `output.conf` 的配置文件文本。
+其他命令行参数：`--address <地址>` / `--port <端口>`（以服务方式运行时覆盖监听地址）。
 
 ### 自动上传
 
-> 自动上传生成的配置到 GitHub Gist（❌ 尚未实现）
+> 自动上传生成的配置到 GitHub Gist（✅ 已实现）
+
+先在程序目录下准备 `gistconf.ini`（Gist 上传配置），然后在请求中添加 `upload=true`（可选 `upload_path=文件名`）。转换完成后结果会自动以**私有 Gist** 上传，API 响应中返回其地址；未配置凭据时上传会被跳过。
 
 ### 规则转换
 
-> 将规则转换为指定的规则类型，用于将不同类型的规则互相转换（❌ 尚未实现）
+> 将规则转换为指定的规则类型（❌ 原生 HTTP 端点暂未提供）
 
-#### 调用地址 (规则转换)
+> 注：C++ 版的 `/getruleset` 端点在本 Rust 版本的原生 HTTP 服务中暂不暴露；规则集处理与转换能力仍保留在核心模块与 WASM / 库 API 中（见 [Library-and-WASM](wiki/Library-and-WASM.md)）。
 
-```txt
-http://127.0.0.1:25500/getruleset?type=%TYPE%&url=%URL%&group=%GROUP%
+---
+
+## 🖥️ Web UI
+
+> 官方前端位于 [`www/`](www/) —— 基于 Next.js（React + Tailwind CSS + next-intl）的现代化界面，提供**简体中文 / English** 双语。转换使用**与 Rust 核心同一份代码编译出的 WebAssembly 引擎**，因此托管实例无需任何代理后端即可完成转换。
+
+在线 Demo（测试时请注意隐私风险）：<https://subconverter-rs.netlify.app/> （也可用文档顶部的一键部署按钮自建实例）
+
+### 界面能力
+
+- **转换器页面**：暴露 `/sub` 的全部选项（目标格式、外部配置预设、过滤与重命名、输出与协议选项、高级字段），表单分组支持点击标题收叠，便于使用；
+- **短链接**：创建、管理与分享转换配置的短链，落地页（`/s/<id>`）可按访问者客户端自动转换；
+- **配置编辑**：可视化编辑自定义策略组与规则集，外部配置可直接选用仓库内置的 `base/config` 预设（构建时自动生成下拉列表）；
+- **下载 / 设置 / 管理**：下载中心、参数设置与后台管理页面，以及 WASM 冒烟测试页；
+- [`www-examples/`](www-examples/) 提供最小的 WASM / Serverless 集成示例。
+
+### 部署形态
+
+| 形态 | 构建命令 | 数据路径 |
+| ---- | ---- | ---- |
+| **托管模式**（Vercel / Netlify） | `pnpm build` | Next.js Route Handler 在服务端加载 WASM 引擎；配置与短链存于 Vercel KV / Netlify Blobs |
+| **纯静态导出** | `STATIC_EXPORT=true pnpm build:static`（输出 `dist/`） | WASM 完全在浏览器内运行；短链与编辑文件以 localStorage 持久化，任意静态托管（GitHub Pages / Nginx / S3…）皆可 |
+| **静态 + 自托管 API** | `STATIC_EXPORT=true STATIC_EXPORT_API=true pnpm build:static` | 静态页调用 `/api/*`，由 Nginx 等反代到以 SQLite 为存储的 Node 后端 |
+
+### 本地开发
+
+```bash
+cd www
+pnpm install
+pnpm dev            # 打开 http://localhost:3000
+pnpm build:static   # 纯静态产物 dist/
 ```
 
-#### 调用说明 (规则转换)
+`dev` / `build` 脚本会先注入 SQLite 版 KV 兼容层（`www/scripts/apply-kv-sqlite.mjs`），并扫描仓库 `base/config` 重新生成外部配置下拉列表（`www/scripts/generate-external-config-list.mjs`）。
 
-| 调用参数 | 必要性 | 示例 | 解释 | 状态 |
-| ------ | :--: | :--- | ---- | :---: |
-| type | 必要 | 6 | 指想要生成的规则类型，用数字表示：1为Surge，2 为 Quantumult X，3 为 Clash domain rule-provider，4 为 Clash ipcidr rule-provider，5 为 Surge DOMAIN-SET，6 为 Clash classical ruleset | 🚧 |
-| url | 必要 | | 指待转换的规则链接，需要经过 [Base64](https://base64.us/) 处理 | 🚧 |
-| group | type=2时必选 | mygroup | 规则对应的策略组名，生成Quantumult X类型（type=2）时必须提供 | 🚧 |
+WASM 产物来自本仓库的 Rust 核心：
+
+```bash
+./scripts/build-wasm.sh          # → pkg/（供 npm 包 subconverter-wasm 使用）
+./scripts/build-wasm-browser.sh  # 浏览器版 → www/vendor/subconverter-wasm-browser
+```
+
+详见 [www/README.md](www/README.md) 与 Wiki 的 [Library-and-WASM](wiki/Library-and-WASM.md)。

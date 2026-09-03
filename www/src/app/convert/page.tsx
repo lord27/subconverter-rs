@@ -22,6 +22,55 @@ const SUPPORTED_TARGETS = [
     'ssd', 'mixed', 'singbox'
 ];
 
+const FIELDSET_LEGEND_CLASS = 'text-lg font-semibold text-gray-100 mb-2';
+
+interface CollapsibleFieldsetProps {
+    title: React.ReactNode;
+    children: React.ReactNode;
+    /** Tailwind classes appended to the <fieldset> wrapper (border/accent). */
+    className?: string;
+    /** Tailwind classes for the legend text colour. */
+    legendClassName?: string;
+    /** Initial open state. */
+    defaultOpen?: boolean;
+}
+
+/** A form section whose legend row can be clicked to collapse / expand its body. */
+function CollapsibleFieldset({
+    title,
+    children,
+    className = 'border-gray-300 shadow-sm',
+    legendClassName = '',
+    defaultOpen = true,
+}: CollapsibleFieldsetProps) {
+    const [open, setOpen] = useState(defaultOpen);
+    return (
+        <fieldset className={`p-4 border rounded-md ${className}`}>
+            <legend className="w-full cursor-pointer select-none" onClick={() => setOpen((v) => !v)}>
+                <span
+                    className={`${FIELDSET_LEGEND_CLASS} ${legendClassName} flex items-center justify-between gap-2`}
+                    aria-expanded={open}
+                >
+                    <span>{title}</span>
+                    <svg
+                        className={`h-4 w-4 shrink-0 text-gray-400 transition-transform duration-200 ${open ? '' : '-rotate-90'}`}
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                        aria-hidden="true"
+                    >
+                        <path
+                            fillRule="evenodd"
+                            d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                            clipRule="evenodd"
+                        />
+                    </svg>
+                </span>
+            </legend>
+            {open && children}
+        </fieldset>
+    );
+}
+
 export default function ConvertPage() {
     const [formData, setFormData] = useState<SubconverterFormParams>({
         target: 'clash',
@@ -267,7 +316,6 @@ export default function ConvertPage() {
     const inputClass = "mt-1 block w-full px-3 py-2 bg-[#0a1526]/85 border border-white/10 rounded-md shadow-sm text-gray-100 placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/25 focus:border-cyan-400/60 sm:text-sm";
     const checkboxClass = "h-4 w-4 text-cyan-400 border-white/20 rounded bg-[#0a1526] accent-cyan-400 focus:ring-cyan-400/30";
     const labelClass = "block text-sm font-medium text-gray-300";
-    const fieldsetLegendClass = "text-lg font-semibold text-gray-100 mb-2";
     const buttonClass = "inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gradient-to-r from-cyan-600 to-sky-600 hover:from-cyan-500 hover:to-sky-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent focus:ring-cyan-400/40 disabled:opacity-50";
     const smallButtonClass = "px-3 py-1.5 text-xs rounded border transition-colors"; // For preset buttons
 
@@ -392,8 +440,7 @@ export default function ConvertPage() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 {/* Required Section */}
-                <fieldset className="p-4 border rounded-md border-gray-300 shadow-sm">
-                    <legend className={fieldsetLegendClass}>{t('requiredSectionTitle')}</legend>
+                <CollapsibleFieldset title={t('requiredSectionTitle')}>
                     <div className="grid grid-cols-1 gap-6">
                         <div>
                             <FieldLabel htmlFor="target" fieldName="target" required>{t('targetFormatLabel')}</FieldLabel>
@@ -440,11 +487,14 @@ export default function ConvertPage() {
                             <p className="mt-1 text-xs text-gray-500">{t('subscriptionUrlHelp')}</p>
                         </div>
                     </div>
-                </fieldset>
+                </CollapsibleFieldset>
 
                 {/* Config Section */}
-                <fieldset className="p-4 border rounded-md border-cyan-400/25 bg-cyan-400/[0.04]">
-                    <legend className={`${fieldsetLegendClass} text-cyan-300`}>{t('configSectionTitle')}</legend>
+                <CollapsibleFieldset
+                    title={t('configSectionTitle')}
+                    className="border-cyan-400/25 bg-cyan-400/[0.04]"
+                    legendClassName="text-cyan-300"
+                >
                     <div className="grid grid-cols-1 gap-4">
                         <div>
                             <FieldLabel htmlFor="config" fieldName="config">{t('externalConfigLabel')}</FieldLabel>
@@ -459,11 +509,10 @@ export default function ConvertPage() {
                             </div>
                         </div>
                     </div>
-                </fieldset>
+                </CollapsibleFieldset>
 
                 {/* Filtering & Renaming Section */}
-                <fieldset className="p-4 border rounded-md border-gray-300 shadow-sm">
-                    <legend className={fieldsetLegendClass}>{t('filterRenameSectionTitle')}</legend>
+                <CollapsibleFieldset title={t('filterRenameSectionTitle')}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <FieldLabel htmlFor="include" fieldName="include">{t('includeRemarksLabel')}</FieldLabel>
@@ -557,11 +606,10 @@ export default function ConvertPage() {
                             />
                         </div>
                     </div>
-                </fieldset>
+                </CollapsibleFieldset>
 
                 {/* Output Options Section */}
-                <fieldset className="p-4 border rounded-md border-gray-300 shadow-sm">
-                    <legend className={fieldsetLegendClass}>{t('outputOptionsSectionTitle')}</legend>
+                <CollapsibleFieldset title={t('outputOptionsSectionTitle')}>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4 items-center">
                         {/* Surge Specific */}
                         {formData.target === 'surge' && (
@@ -673,11 +721,10 @@ export default function ConvertPage() {
                             <FieldLabel htmlFor="expand" fieldName="expand">{t('expandRulesetsLabel')}</FieldLabel>
                         </div>
                     </div>
-                </fieldset>
+                </CollapsibleFieldset>
 
                 {/* Protocol Flags Section */}
-                <fieldset className="p-4 border rounded-md border-gray-300 shadow-sm">
-                    <legend className={fieldsetLegendClass}>{t('protocolFlagsSectionTitle')}</legend>
+                <CollapsibleFieldset title={t('protocolFlagsSectionTitle')}>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
                         <div className="flex items-center space-x-2">
                             <input
@@ -724,11 +771,10 @@ export default function ConvertPage() {
                             <FieldLabel htmlFor="tls13" fieldName="tls13">{t('enableTls13Label')}</FieldLabel>
                         </div>
                     </div>
-                </fieldset>
+                </CollapsibleFieldset>
 
                 {/* Advanced Section */}
-                <fieldset className="p-4 border rounded-md border-gray-300 shadow-sm">
-                    <legend className={fieldsetLegendClass}>{t('advancedSectionTitle')}</legend>
+                <CollapsibleFieldset title={t('advancedSectionTitle')}>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <FieldLabel htmlFor="group" fieldName="group">{t('customGroupNameLabel')}</FieldLabel>
@@ -884,7 +930,7 @@ export default function ConvertPage() {
                             <p className="mt-1 text-xs text-gray-500">{t('uploadPathHelp')}</p>
                         </div>
                     </div>
-                </fieldset>
+                </CollapsibleFieldset>
 
                 {/* Submission Button */}
                 <div className="flex justify-between items-center mt-6 pt-4 border-t border-gray-200">

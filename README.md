@@ -38,6 +38,7 @@ https://subconverter-rs.netlify.app/
 - [Basic Usage](#-basic-usage)
 - [Advanced Usage](#-advanced-usage)
 - [Configuration](#️-configuration)
+- [Web UI and WASM](#-web-ui-and-wasm)
 - [Development](#-development)
 - [Contributors](#-contributors)
 - [License](#-license)
@@ -47,10 +48,13 @@ https://subconverter-rs.netlify.app/
 ## ✨ Features
 
 - High-performance subscription conversion with Rust's speed and safety
-- Support for various proxy formats and protocols
+- Broad protocol coverage — SS/SSR, VMess, VLESS, Trojan (incl. Trojan-Go), Hysteria/2, TUIC, AnyTLS, WireGuard, Snell, HTTP/SOCKS and more
 - Flexible node filtering, renaming, and emoji addition
-- Customizable templates and rule sets
-- HTTP server with RESTful API endpoints
+- Customizable templates, rule sets and proxy groups
+- HTTP server exposing `/sub`, `/surge2clash` and `/{target}` endpoints
+- Optional automatic publishing of generated configs to GitHub Gist
+- Compiles to WebAssembly — the same engine runs natively, in Node.js, or in the browser
+- Official Web UI (Next.js) with short links, visual config / rule-group editors and i18n (EN/中文)
 - Compatible with original subconverter configuration
 
 ---
@@ -70,7 +74,8 @@ The following table shows the support status of different proxy protocols in var
 | SSR                  | ✅    | ✅      | ⚠️           | ❌    | ⚠️         | ⚠️           | ⚠️   | ⚠️        | ⚠️     | ❌       | ✅         | ⬇️      |
 | HTTP/SOCKS           | ✅    | ✅      | ⚠️           | ❌    | ⚠️         | ⚠️           | ⚠️   | ⚠️        | ⚠️     | ❌       | ⬇️         | ⬇️      |
 | WireGuard            | ✅    | ✅      | ⚠️           | ⬇️    | ❌         | ⚠️           | ⚠️   | ⚠️        | ❌     | ❌       | ⬇️         | ⬇️      |
-| Snell                | ❌    | ❌      | ⚠️           | ❌    | ❌         | ⚠️           | ⚠️   | ⚠️        | ❌     | ❌       | ⬇️         | ⬇️      |
+| Snell                | ✅    | ❌      | ✅           | ❌    | ❌         | ⚠️           | ⚠️   | ⚠️        | ❌     | ❌       | ⬇️         | ⬇️      |
+| TUIC                 | ✅    | ✅      | ⚠️           | ❌    | ⚠️         | ⚠️           | ⚠️   | ⚠️        | ❌     | ❌       | ⬇️         | ⬇️      |
 | SSD                  | ⬇️    | ⬇️      | ⬇️           | ⬇️    | ⬇️         | ⬇️           | ⬇️   | ⬇️        | ⬇️     | ⬇️       | ❌         | ⬇️      |
 
 **Legend:**
@@ -84,16 +89,19 @@ The following table shows the support status of different proxy protocols in var
 1. Shadowrocket users can use the `ss`, `ssr`, `v2ray`, and `mixed` parameters.
 2. For HTTP/Socks links without naming (TG-like), you can append `&remarks=` for naming and `&group=` for group naming. These parameters need to be [URLEncoded](https://www.urlencoder.org/).
 3. When the target type is `mixed`, all supported nodes will be output as a normal subscription (Base64 encoded).
+4. The matrix above is a quick overview; some cells may lag behind the implementation. See the wiki page [Protocols-and-Targets](wiki/Protocols-and-Targets.md) for the per-cell status kept up to date with source code and golden tests.
 
 ---
 
 ## 🛣️ Roadmap
 
-Here are some features planned for future releases:
+> The native HTTP service currently exposes `/sub`, `/surge2clash` and a `/{target}` shorthand. Everything else listed below is reachable through the WASM build / Web UI, or is still in progress — see [Library-and-WASM](wiki/Library-and-WASM.md).
 
-- **Gist Publishing**: Automatically upload generated configurations to GitHub Gist.
-- **AnyTLS Support**: Add support for the AnyTLS protocol.
-- **Visual Rule Group Configuration**: Implement a graphical interface for configuring rule groups.
+Recently completed / available features:
+
+- ✅ **Gist Publishing**: `upload=true` + `gistconf.ini` uploads the generated config to a GitHub Gist (returned in the API response).
+- ✅ **AnyTLS Support**: input parsing (`anytls://`) and Clash / SingBox output are implemented.
+- ✅ **Visual Rule Group & Ruleset Configuration**: available in the Web UI's config editors (see [Web UI and WASM](#-web-ui-and-wasm)).
 
 ---
 
@@ -127,7 +135,13 @@ git clone https://github.com/lonelam/subconverter-rs.git
 cd subconverter-rs
 cargo build --release --features=web-api
 ```
-The binary will be available at `target/release/subconverter-rs`.
+The binary will be available at `target/release/subconverter`.
+
+**Cargo features:**
+- `web-api` — build the native HTTP server binary (actix-web).
+- `js-runtime` — enable the built-in JS engine so `filter_script` / `sort_script` parameters take effect (default off for safety).
+
+For a WASM build, see [Library-and-WASM](wiki/Library-and-WASM.md) or the Web UI section below.
 
 ---
 
@@ -142,6 +156,16 @@ Full usage documentation is on the **[project wiki](https://github.com/lonelam/s
 ```http
 http://127.0.0.1:25500/sub?target=%TARGET%&url=%URL%&config=%CONFIG%
 ```
+
+The native HTTP server (built with `--features=web-api`) exposes:
+
+| Endpoint             | Description                                                            |
+|----------------------|------------------------------------------------------------------------|
+| `/sub`               | Full-featured subscription conversion (see parameters below)           |
+| `/surge2clash`       | Surge subscription → Clash node list (`?link=...`, no URL-encoding needed) |
+| `/{target_type}`     | Shorthand for `/sub` with `target` taken from the path (e.g. `/clash?url=...`) |
+
+> In the WASM / Web UI deployments the conversion runs through the same engine but is invoked differently — see [Web UI and WASM](#-web-ui-and-wasm).
 
 ### Parameters
 
@@ -226,6 +250,12 @@ http://127.0.0.1:25500/surge2clash?link=SurgeSubscriptionLink
 | `prepend`        | No       | `true`      | Insert nodes at the beginning                        | ✅     |
 </details>
 
+*Notes: the table above is a commonly-used subset. `upload`/`upload_path` upload the
+result to a Gist (`gistconf.ini` must be present), while `dev_id` is currently
+parsed but not applied. `filter_script`/`sort_script` only take effect when the
+binary is built with the `js-runtime` feature. See [HTTP-API](wiki/HTTP-API.md)
+for the complete reference.*
+
 ---
 
 ## ⚙️ Configuration
@@ -278,24 +308,68 @@ There are several other configuration sections for managed config settings, emoj
 
 ### External Configuration
 
-You can host configuration files on GitHub Gist or other accessible network locations. URL-encode the configuration URL and add it to the `&config=` parameter in your API call.
+You can host configuration files on GitHub Gist or other accessible network locations. URL-encode the configuration URL and add it to the `&config=` parameter in your API call. You can also point `config` at one of the **bundled presets** shipped in this repo under `base/config` (ACL4SSR, Aethersailor, …) — the Web UI exposes them in its external-config dropdown.
 
-### Local Generation
+### Command-Line Conversion
 
-For generating configurations locally, create a `generate.ini` file:
+To generate a config without starting the server, pass a full request URL together with an output file:
 
-```ini
-[test]
-path=output.conf
-target=surge
-ver=4
-url=ss://Y2hhY2hhMjAtaWV0Zi1wb2x5MTMwNTpwYXNzd29yZA@www.example.com:1080#Example
-```
-
-Then run:
 ```bash
-subconverter -g
+subconverter \
+  --config pref.ini \
+  --url "/sub?target=clash&url=https%3A%2F%2Fexample.com%2Fsubscribe%2FABCDE" \
+  --output output.yaml
 ```
+
+Other CLI flags: `--address <ADDR>` / `--port <PORT>` override the listen
+address when running as a server.
+
+---
+
+## 🖥️ Web UI and WASM
+
+The official frontend lives in [`www/`](www/) — a Next.js app (React, Tailwind CSS, `next-intl`) with **English / 中文** UI. It converts subscriptions with **the very same Rust engine compiled to WebAssembly**, so a hosted instance needs no proxy backend for conversion.
+
+- Try the demo: <https://subconverter-rs.netlify.app/> (or deploy it yourself with the one-click Netlify badge at the top).
+
+### What the UI offers
+
+- Full converter page — every `/sub` option is exposed (target, external-config preset, filtering / renaming, output & protocol flags, advanced fields) with collapsible form sections.
+- Shareable short links — create, list and manage links; landing page (`/s/<id>`) can auto-convert to the visitor's client.
+- Visual config editor — custom proxy groups & rulesets, and external-config selection including the bundled `base/config` presets shipped by this repo.
+- Downloads page, settings, admin pages, plus a WASM smoke-test page.
+- Monorepo-style tooling: `www-examples/` holds minimal WASM / serverless examples.
+
+### Deployment modes
+
+| Mode | Build | Data path |
+|---|---|---|
+| **Hosted** (Vercel / Netlify) | `pnpm build` | Next.js Route Handlers load the WASM engine server-side; configs & links stored in Vercel KV / Netlify Blobs |
+| **Pure static** | `STATIC_EXPORT=true pnpm build:static` → `dist/` | WASM runs fully in the browser; short links / edited VFS files persist in `localStorage` — host it anywhere (GitHub Pages, Nginx, S3…) |
+| **Static + self-hosted API** | `STATIC_EXPORT=true STATIC_EXPORT_API=true pnpm build:static` | static pages call `/api/*`, proxied by e.g. Nginx to a small Node backend whose storage is SQLite |
+
+### Local development
+
+```bash
+cd www
+pnpm install
+pnpm dev            # Next dev server on http://localhost:3000
+pnpm build:static   # produce dist/ (pure static mode)
+```
+
+The `dev` / `build` scripts first apply a SQLite-backed KV shim
+(`www/scripts/apply-kv-sqlite.mjs`) and regenerate the external-config dropdown
+list by scanning the repo's `base/config` folder
+(`www/scripts/generate-external-config-list.mjs`).
+
+The WASM bundles come from this Rust core:
+
+```bash
+./scripts/build-wasm.sh          # pkg/ — used by the npm package subconverter-wasm
+./scripts/build-wasm-browser.sh  # browser edition → www/vendor/subconverter-wasm-browser
+```
+
+See [www/README.md](www/README.md) and [Library-and-WASM](wiki/Library-and-WASM.md) for details.
 
 ---
 
