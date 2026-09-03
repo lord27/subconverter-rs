@@ -1,0 +1,220 @@
+- generic [active] [ref=f2e1]:
+  - alert [ref=f2e2]
+  - generic [ref=f2e3]:
+    - heading "高级订阅转换器" [level=1] [ref=f2e4]
+    - generic [ref=f2e5]:
+      - group "必要参数" [ref=f2e6]:
+        - generic [ref=f2e8]:
+          - generic [ref=f2e9]:
+            - generic [ref=f2e10]: 目标格式*
+            - combobox "目标格式*" [ref=f2e12]:
+              - option "auto"
+              - option "clash" [selected]
+              - option "clashr"
+              - option "surge"
+              - option "quan"
+              - option "quanx"
+              - option "mellow"
+              - option "surfboard"
+              - option "loon"
+              - option "ss"
+              - option "ssr"
+              - option "sssub"
+              - option "v2ray"
+              - option "trojan"
+              - option "trojan-go"
+              - option "hysteria"
+              - option "hysteria2"
+              - option "ssd"
+              - option "mixed"
+              - option "singbox"
+          - generic [ref=f2e13]:
+            - generic [ref=f2e14]: Clash 内核流派
+            - combobox "Clash 内核流派" [ref=f2e16]:
+              - option "mihomo / Clash.Meta" [selected]
+              - option "Clash Premium"
+              - option "Stash"
+            - paragraph [ref=f2e17]: mihomo 支持全部协议；Premium 与 Stash 会自动剔除对应内核无法加载的协议和字段。
+          - generic [ref=f2e18]:
+            - generic [ref=f2e19]: 订阅链接*
+            - textbox "订阅链接*" [ref=f2e21]:
+              - /placeholder: 输入一个或多个URL，用 | 分隔
+            - paragraph [ref=f2e22]: 使用竖线 (|) 或换行符分隔多个URL。
+      - group "配置预设" [ref=f2e23]:
+        - generic [ref=f2e26]:
+          - generic [ref=f2e27]: 外部配置
+          - generic [ref=f2e29]:
+            - combobox "外部配置" [ref=f2e31]:
+              - option "选择内置配置文件（可选）" [selected]
+              - option "自定义 URL / 远程链接…"
+              - option "ACL4SSR_AdblockPlus.ini"
+              - option "ACL4SSR_BackCN.ini"
+              - option "ACL4SSR_Mini_Fallback.ini"
+              - option "ACL4SSR_Mini_MultiMode.ini"
+              - option "ACL4SSR_Mini_NoAuto.ini"
+              - option "ACL4SSR_Mini.ini"
+              - option "ACL4SSR_NoApple.ini"
+              - option "ACL4SSR_NoAuto_NoApple_NoMicrosoft.ini"
+              - option "ACL4SSR_NoAuto_NoApple.ini"
+              - option "ACL4SSR_NoAuto.ini"
+              - option "ACL4SSR_NoMicrosoft.ini"
+              - option "ACL4SSR_Online_AdblockPlus.ini"
+              - option "ACL4SSR_Online_Full_AdblockPlus.ini"
+              - option "ACL4SSR_Online_Full_Google.ini"
+              - option "ACL4SSR_Online_Full_MultiMode.ini"
+              - option "ACL4SSR_Online_Full_Netflix.ini"
+              - option "ACL4SSR_Online_Full_NoAuto.ini"
+              - option "ACL4SSR_Online_Full.ini"
+              - option "ACL4SSR_Online_Mini_AdblockPlus.ini"
+              - option "ACL4SSR_Online_Mini_Fallback.ini"
+              - option "ACL4SSR_Online_Mini_MultiCountry.ini"
+              - option "ACL4SSR_Online_Mini_MultiMode.ini"
+              - option "ACL4SSR_Online_Mini_NoAuto.ini"
+              - option "ACL4SSR_Online_Mini.ini"
+              - option "ACL4SSR_Online_MultiCountry.ini"
+              - option "ACL4SSR_Online_NoAuto.ini"
+              - option "ACL4SSR_Online_NoReject.ini"
+              - option "ACL4SSR_Online.ini"
+              - option "ACL4SSR_WithChinaIp_WithGFW.ini"
+              - option "ACL4SSR_WithChinaIp.ini"
+              - option "ACL4SSR_WithGFW.ini"
+              - option "ACL4SSR.ini"
+              - option "example_external_config.ini"
+              - option "Aethersailor/ACL4SSR_Online_Full_Loyalsoldier_clean.ini"
+              - option "Aethersailor/Custom_Clash_Fallback.ini"
+              - option "Aethersailor/Custom_Clash_Full_Fallback.ini"
+              - option "Aethersailor/Custom_Clash_Full.ini"
+              - option "Aethersailor/Custom_Clash_GFW_Fallback.ini"
+              - option "Aethersailor/Custom_Clash_GFW.ini"
+              - option "Aethersailor/Custom_Clash_Lite_Fallback.ini"
+              - option "Aethersailor/Custom_Clash_Lite.ini"
+              - option "Aethersailor/Custom_Clash.ini"
+            - paragraph [ref=f2e32]: 规则集配置的URL或本地路径（如果服务器允许）
+      - group "过滤和重命名" [ref=f2e33]:
+        - generic [ref=f2e35]:
+          - generic [ref=f2e36]:
+            - generic [ref=f2e37]: 包含节点备注 (正则)
+            - textbox "包含节点备注 (正则)" [ref=f2e39]:
+              - /placeholder: 例如：HK|SG
+          - generic [ref=f2e40]:
+            - generic [ref=f2e41]: 排除节点备注 (正则)
+            - textbox "排除节点备注 (正则)" [ref=f2e43]:
+              - /placeholder: 例如：过期|禁用
+          - generic [ref=f2e44]:
+            - generic [ref=f2e45]: 重命名节点
+            - textbox "重命名节点" [ref=f2e47]:
+              - /placeholder: "旧名称@新名称`另一个旧@另一个新"
+            - paragraph [ref=f2e48]: "使用 ` 分隔多个规则，@ 作为分隔符。"
+          - generic [ref=f2e49]:
+            - generic [ref=f2e50]: Emoji 处理
+            - generic [ref=f2e53]:
+              - checkbox "Emoji 处理 添加并移除旧 Emoji" [ref=f2e54]
+              - generic [ref=f2e55]: 添加并移除旧 Emoji
+            - generic [ref=f2e56]:
+              - generic [ref=f2e57]:
+                - checkbox "仅添加 Emoji" [ref=f2e58]
+                - generic [ref=f2e59]: 仅添加 Emoji
+              - generic [ref=f2e60]:
+                - checkbox "仅移除旧 Emoji" [ref=f2e61]
+                - generic [ref=f2e62]: 仅移除旧 Emoji
+            - paragraph [ref=f2e63]: 勾选第一个选项将覆盖具体选项。
+          - generic [ref=f2e64]:
+            - generic [ref=f2e65]: 过滤废弃节点
+            - checkbox "过滤废弃节点" [ref=f2e67]
+      - group "输出选项" [ref=f2e68]:
+        - generic [ref=f2e70]:
+          - generic [ref=f2e71]:
+            - checkbox "Clash：新字段名" [ref=f2e72]
+            - generic [ref=f2e73]: Clash：新字段名
+          - generic [ref=f2e75]:
+            - checkbox "Clash：启用脚本" [ref=f2e76]
+            - generic [ref=f2e77]: Clash：启用脚本
+          - generic [ref=f2e79]:
+            - checkbox "Clash：经典规则集" [ref=f2e80]
+            - generic [ref=f2e81]: Clash：经典规则集
+          - generic [ref=f2e83]:
+            - checkbox "追加代理类型" [ref=f2e84]
+            - generic [ref=f2e85]: 追加代理类型
+          - generic [ref=f2e87]:
+            - checkbox "仅节点列表" [ref=f2e88]
+            - generic [ref=f2e89]: 仅节点列表
+          - generic [ref=f2e91]:
+            - checkbox "排序节点" [ref=f2e92]
+            - generic [ref=f2e93]: 排序节点
+          - generic [ref=f2e95]:
+            - checkbox "启用规则生成器重命名" [ref=f2e96]
+            - generic [ref=f2e97]: 启用规则生成器重命名
+          - generic [ref=f2e99]:
+            - checkbox "展开规则集 (Clash)" [ref=f2e100]
+            - generic [ref=f2e101]: 展开规则集 (Clash)
+      - group "协议标志" [ref=f2e103]:
+        - generic [ref=f2e105]:
+          - generic [ref=f2e106]:
+            - checkbox "TCP 快速打开" [ref=f2e107]
+            - generic [ref=f2e108]: TCP 快速打开
+          - generic [ref=f2e110]:
+            - checkbox "UDP 转发" [ref=f2e111]
+            - generic [ref=f2e112]: UDP 转发
+          - generic [ref=f2e114]:
+            - checkbox "跳过证书验证" [ref=f2e115]
+            - generic [ref=f2e116]: 跳过证书验证
+          - generic [ref=f2e118]:
+            - checkbox "启用 TLS 1.3" [ref=f2e119]
+            - generic [ref=f2e120]: 启用 TLS 1.3
+      - group "高级选项" [ref=f2e122]:
+        - generic [ref=f2e124]:
+          - generic [ref=f2e125]:
+            - generic [ref=f2e126]: 自定义分组名称
+            - textbox "自定义分组名称" [ref=f2e128]
+          - generic [ref=f2e129]:
+            - generic [ref=f2e130]: 自定义代理分组
+            - textbox "自定义代理分组" [ref=f2e132]:
+              - /placeholder: "[Proxy Group]`..."
+            - paragraph [ref=f2e133]: INI格式，用 @ 分隔。
+          - generic [ref=f2e134]:
+            - generic [ref=f2e135]: 自定义规则集
+            - textbox "自定义规则集" [ref=f2e137]:
+              - /placeholder: "[Rule]`..."
+            - paragraph [ref=f2e138]: INI格式，用 @ 分隔。
+          - generic [ref=f2e139]:
+            - generic [ref=f2e140]: 插入节点 (来自服务器配置)
+            - checkbox "插入节点 (来自服务器配置)" [ref=f2e142]
+          - generic [ref=f2e143]:
+            - generic [ref=f2e144]: 预置插入的节点
+            - checkbox "预置插入的节点" [disabled] [ref=f2e146]
+          - generic [ref=f2e147]:
+            - generic [ref=f2e148]: 更新间隔 (秒)
+            - spinbutton "更新间隔 (秒)" [ref=f2e150]
+          - generic [ref=f2e151]:
+            - generic [ref=f2e152]: 严格更新模式
+            - checkbox "严格更新模式" [ref=f2e154]
+          - generic [ref=f2e155]:
+            - generic [ref=f2e156]: 排序脚本 URL/路径
+            - textbox "排序脚本 URL/路径" [ref=f2e158]
+          - generic [ref=f2e159]:
+            - generic [ref=f2e160]: 过滤脚本 URL/路径
+            - textbox "过滤脚本 URL/路径" [ref=f2e162]
+          - generic [ref=f2e163]:
+            - generic [ref=f2e164]: 设备ID
+            - textbox "设备ID" [ref=f2e166]
+          - generic [ref=f2e167]:
+            - generic [ref=f2e168]: API 令牌 (如果需要)
+            - textbox "API 令牌 (如果需要)" [ref=f2e170]
+          - generic [ref=f2e171]:
+            - checkbox "上传结果到Gist" [ref=f2e172]
+            - generic [ref=f2e173]: 上传结果到Gist
+          - generic [ref=f2e175]:
+            - generic [ref=f2e176]: 上传Gist路径
+            - textbox "上传Gist路径" [disabled] [ref=f2e178]:
+              - /placeholder: 例如：profiles/my_config.yaml
+            - paragraph [ref=f2e179]: 在服务器上保存转换结果的路径（需要服务器启用）
+      - generic [ref=f2e180]:
+        - generic [ref=f2e181]:
+          - text: 标记为
+          - generic [ref=f2e182]: (已设置)
+          - text: 的字段将包含在请求中。
+        - generic [ref=f2e183]:
+          - generic [ref=f2e184]:
+            - checkbox "保存为订阅" [ref=f2e185]
+            - generic [ref=f2e186]: 保存为订阅
+          - button "生成配置" [disabled] [ref=f2e187]

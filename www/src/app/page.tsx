@@ -6,36 +6,8 @@ import { useState, FormEvent, useCallback, useEffect } from "react";
 import { useTranslations } from 'next-intl';
 import { convertSubscription, SubResponseData, ErrorData, createShortUrl, ShortUrlData, getAvailableDownloads, detectUserOS, AppDownloadInfo } from '@/lib/api-client';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import ExternalConfigSelect from '@/components/ExternalConfigSelect';
 import { copyToClipboard } from '@/lib/clipboard';
-
-// Define config presets for easy maintenance
-const CONFIG_PRESETS = [
-  {
-    name: "ACL4SSR",
-    url: "/config/ACL4SSR.ini",
-    description: "Basic rules"
-  },
-  {
-    name: "ACL4SSR Full",
-    url: "/config/ACL4SSR_Online_Full.ini",
-    description: "Full rules"
-  },
-  {
-    name: "ACL4SSR Mini",
-    url: "/config/ACL4SSR_Online_Mini.ini",
-    description: "Minimal rules"
-  },
-  {
-    name: "Divine China",
-    url: "/config/China.yaml",
-    description: "China rules"
-  },
-  {
-    name: "Loon Simple",
-    url: "/config/loon_simple.conf",
-    description: "Simple Loon config"
-  }
-];
 
 export default function Home() {
   const t = useTranslations('HomePage');
@@ -185,12 +157,6 @@ export default function Home() {
   const inputClass =
     "w-full rounded-lg border border-white/10 bg-[#0a1526]/85 px-4 py-2.5 text-sm text-gray-100 " +
     "placeholder:text-gray-500 outline-none transition focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/20";
-  const chipClass = (active: boolean) =>
-    `px-3 py-1.5 text-xs rounded-md border transition-colors ${
-      active
-        ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-200"
-        : "border-white/10 bg-white/[0.04] text-gray-300 hover:border-cyan-400/40 hover:text-cyan-200"
-    }`;
 
   return (
     <main className="relative flex min-h-screen flex-col items-center px-4 pb-20 pt-10 md:px-8">
@@ -295,26 +261,11 @@ export default function Home() {
                 <label htmlFor="configUrl" className="mb-1.5 block text-sm font-medium text-gray-300">
                   {t('externalConfig')}
                 </label>
-                <div className="mb-2 flex flex-wrap gap-2">
-                  {CONFIG_PRESETS.map(preset => (
-                    <button
-                      key={preset.name}
-                      type="button"
-                      onClick={() => setConfigUrl(preset.url)}
-                      className={chipClass(configUrl === preset.url)}
-                      title={preset.description}
-                    >
-                      {preset.name}
-                    </button>
-                  ))}
-                </div>
-                <input
-                  type="text"
+                <ExternalConfigSelect
                   id="configUrl"
-                  placeholder="External configuration URL or path"
-                  className={inputClass}
                   value={configUrl}
-                  onChange={(e) => setConfigUrl(e.target.value)}
+                  onChange={setConfigUrl}
+                  className={inputClass}
                 />
               </div>
             </div>

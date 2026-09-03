@@ -1,0 +1,24 @@
+[     254ms] [LOG] AppInitializer: Initialized flag = false @ http://localhost:8099/_next/static/chunks/app/layout-8344ade73335e1ea.js:0
+[     254ms] [LOG] AppInitializer: Redirecting to /startup @ http://localhost:8099/_next/static/chunks/app/layout-8344ade73335e1ea.js:0
+[     356ms] [LOG] Attempting webapp initialization... @ http://localhost:8099/_next/static/chunks/app/startup/page-9a9ca53db72e42f6.js:0
+[     358ms] [LOG] AppInitializer: Initialized flag = false @ http://localhost:8099/_next/static/chunks/app/layout-8344ade73335e1ea.js:0
+[     569ms] [INFO] WASM logging initialized at level: INFO with stack trace support @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     576ms] [INFO] initialize_subconverter_webapp called @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     578ms] [INFO] Initializing VercelKvVfs... @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     579ms] [INFO] Initialized GitHub config: repo=lonelam/subconverter-rs, branch=main, root_path=base @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     580ms] [INFO] VercelKvVfs initialized successfully. @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     597ms] [INFO] Starting load_github_directory (shallow: true, recursive: true) @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     597ms] [INFO] Loading all files from GitHub configured root path @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     647ms] [INFO] Found 400 files across 28 parent directories and 34 total directories to create @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     647ms] [INFO] Waiting for 34 directory creation tasks... @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     676ms] [INFO] Processing 400 files concurrently (shallow: true / deep: false) @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     676ms] [INFO] Processing files in shallow mode (synchronous metadata update per dir)... @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     701ms] [INFO] Finished processing files: 400 successes initiated/completed, 0 failures detected @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     702ms] [INFO] GitHub load triggered successfully for root directory during initialization. @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     703ms] [LOG] Initialization API result: {success: true, githubLoadTriggered: true, message: VFS initialized, GitHub load was triggered.} @ http://localhost:8099/_next/static/chunks/app/startup/page-9a9ca53db72e42f6.js:0
+[     703ms] [LOG] Initialization successful, redirecting to home... @ http://localhost:8099/_next/static/chunks/app/startup/page-9a9ca53db72e42f6.js:0
+[     712ms] [LOG] AppInitializer: Initialized flag = true @ http://localhost:8099/_next/static/chunks/app/layout-8344ade73335e1ea.js:0
+[     868ms] [INFO] admin_file_exists called with path: downloads/available_downloads.json @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     907ms] [INFO] admin_file_exists called with path: downloads @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     983ms] [INFO] admin_create_directory called for downloads @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1
+[     985ms] [INFO] admin_write_file called with path: downloads/available_downloads.json @ http://localhost:8099/_next/static/chunks/557.63c37be3b0209421.js:1

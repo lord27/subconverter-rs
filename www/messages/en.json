@@ -243,7 +243,10 @@
         "enabled": "Enabled",
         "disabled": "Disabled",
         "backToHome": "Back to Home",
-        "copy": "Copy"
+        "copy": "Copy",
+        "externalConfigSelectPlaceholder": "Pick a bundled config (optional)",
+        "externalConfigCustom": "Custom URL / remote link…",
+        "externalConfigCustomPlaceholder": "Paste a remote config address, e.g. https://… or /config/…"
     },
     "Startup": {
         "title": "Initializing Subconverter",

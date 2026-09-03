@@ -241,7 +241,10 @@
         "fieldSet": "已设置",
         "unset": "取消设置",
         "backToHome": "返回首页",
-        "copy": "复制"
+        "copy": "复制",
+        "externalConfigSelectPlaceholder": "选择内置配置文件（可选）",
+        "externalConfigCustom": "自定义 URL / 远程链接…",
+        "externalConfigCustomPlaceholder": "粘贴远程配置地址，例如 https://… 或 /config/…"
     },
     "Startup": {
         "title": "初始化 Subconverter",

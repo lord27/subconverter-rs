@@ -3,6 +3,7 @@
 import React, { useState, useCallback, ChangeEvent, FormEvent, useEffect, useRef } from 'react';
 import { useTranslations } from 'next-intl';
 import { copyToClipboard } from '@/lib/clipboard';
+import ExternalConfigSelect from '@/components/ExternalConfigSelect';
 import {
     convertSubscription,
     SubconverterFormParams,
@@ -123,6 +124,16 @@ export default function ConvertPage() {
             return newSet;
         });
     }, []);
+
+    // External config picked from the bundled-INI dropdown (or a custom URL).
+    const handleConfigChange = useCallback((value: string) => {
+        if (value === '') {
+            handleResetField('config');
+            return;
+        }
+        setFormData(prev => ({ ...prev, config: value }));
+        setSetFields(prev => new Set([...prev, 'config']));
+    }, [handleResetField]);
 
     // Fields that map to `?flag=1` in the conversion query string.
     const BOOL_FIELDS = new Set([
@@ -438,66 +449,11 @@ export default function ConvertPage() {
                         <div>
                             <FieldLabel htmlFor="config" fieldName="config">{t('externalConfigLabel')}</FieldLabel>
                             <div className="grid grid-cols-1 gap-2">
-                                <div className="flex flex-wrap gap-2 mb-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setFormData(prev => ({ ...prev, config: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online.ini' }));
-                                            setSetFields(prev => new Set([...prev, 'config']));
-                                        }}
-                                        className={`${smallButtonClass} bg-cyan-400/10 hover:bg-cyan-400/20 border-cyan-400/30 text-cyan-200`}
-                                    >
-                                        {t('configPresetACL4SSROnline')}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setFormData(prev => ({ ...prev, config: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online_Full.ini' }));
-                                            setSetFields(prev => new Set([...prev, 'config']));
-                                        }}
-                                        className={`${smallButtonClass} bg-cyan-400/10 hover:bg-cyan-400/20 border-cyan-400/30 text-cyan-200`}
-                                    >
-                                        {t('configPresetACL4SSROnlineFull')}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setFormData(prev => ({ ...prev, config: 'https://raw.githubusercontent.com/ACL4SSR/ACL4SSR/master/Clash/config/ACL4SSR_Online_Mini.ini' }));
-                                            setSetFields(prev => new Set([...prev, 'config']));
-                                        }}
-                                        className={`${smallButtonClass} bg-cyan-400/10 hover:bg-cyan-400/20 border-cyan-400/30 text-cyan-200`}
-                                    >
-                                        {t('configPresetACL4SSROnlineMini')}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setFormData(prev => ({ ...prev, config: 'https://raw.githubusercontent.com/DivineEngine/Profiles/master/Clash/config/China.yaml' }));
-                                            setSetFields(prev => new Set([...prev, 'config']));
-                                        }}
-                                        className={`${smallButtonClass} bg-cyan-400/10 hover:bg-cyan-400/20 border-cyan-400/30 text-cyan-200`}
-                                    >
-                                        {t('configPresetDivineEngine')}
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            setFormData(prev => ({ ...prev, config: 'https://gist.githubusercontent.com/tindy2013/1fa08640a9088ac8652dbd40c5d2715b/raw/loon_simple.conf' }));
-                                            setSetFields(prev => new Set([...prev, 'config']));
-                                        }}
-                                        className={`${smallButtonClass} bg-cyan-400/10 hover:bg-cyan-400/20 border-cyan-400/30 text-cyan-200`}
-                                    >
-                                        {t('configPresetLoonSimple')}
-                                    </button>
-                                </div>
-                                <input
-                                    type="text"
+                                <ExternalConfigSelect
                                     id="config"
-                                    name="config"
                                     value={formData.config ?? ''}
-                                    onChange={handleInputChange}
+                                    onChange={handleConfigChange}
                                     className={getInputClass("config")}
-                                    placeholder={t('externalConfigPlaceholder')}
                                 />
                                 <p className="mt-1 text-xs text-gray-400">{t('externalConfigHelp')}</p>
                             </div>

@@ -3,13 +3,13 @@
   "version": "0.2.13-beta.dev.36b38f2",
   "private": true,
   "scripts": {
-    "dev": "node scripts/apply-kv-sqlite.mjs && next dev",
+    "dev": "node scripts/apply-kv-sqlite.mjs && node scripts/generate-external-config-list.mjs && next dev",
     "rebuild:wasm:dev": "cd .. && ./scripts/build-wasm.sh && cd www && pnpm dev",
-    "build": "node scripts/apply-kv-sqlite.mjs && next build",
+    "build": "node scripts/apply-kv-sqlite.mjs && node scripts/generate-external-config-list.mjs && next build",
     "start": "next start",
     "lint": "next lint",
     "deploy:netlify": "NETLIFY=true netlify deploy --build",
-    "build:static": "node scripts/export-static.mjs"
+    "build:static": "node scripts/generate-external-config-list.mjs && node scripts/export-static.mjs"
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
